@@ -249,8 +249,8 @@ symbols_count_time:
 # Reward
 #reward_comment: Donate comment here
 #wechatpay: /images/wechatpay.jpg
-wechatpay: /images/wxqr.png
-#alipay: /images/alipay.jpg
+#wechatpay: /images/wxqr.png
+alipay: /images/alipay.png
 #bitcoin: /images/bitcoin.png
 
 # Declare license on posts
