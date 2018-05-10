@@ -6,13 +6,191 @@ tags: [travis, hexo]
 
 [Btrace](https://github.com/btraceio/btrace) - a safe, dynamic tracing tool for the Java platform
 
+# Btrace 加载过程
+
+## client
+
+- Javac 加载 Btrace Verifier
+- 编译成字节码
+- 通过 attach 方法动态 attach 到 JVM [Attach API](https://docs.oracle.com/javase/7/docs/jdk/api/attach/spec/com/sun/tools/attach/spi/AttachProvider.html)
+- submit 提交 Btrace 编译后的字节码到对应 PID VM.(socket 通信)
+
+```java
+try {
+    Client client = new Client(port, OUTPUT_FILE, PROBE_DESC_PATH,
+        DEBUG, TRACK_RETRANSFORM, TRUSTED, DUMP_CLASSES, DUMP_DIR, statsdDef);
+    if (! new File(fileName).exists()) {
+        errorExit("File not found: " + fileName, 1);
+    }
+    byte[] code = client.compile(fileName, classPath, includePath);
+    if (code == null) {
+        errorExit("BTrace compilation failed", 1);
+    }
+    client.attach(pid, null, classPath);
+    registerExitHook(client);
+    if (con != null) {
+        registerSignalHandler(client);
+    }
+    if (isDebug()) debugPrint("submitting the BTrace program");
+    client.submit(fileName, code, btraceArgs,
+        createCommandListener(client));
+} catch (IOException exp) {
+    errorExit(exp.getMessage(), 1);
+}
+```
+
+<!-- more -->
+
+``` java
+/**
+ * Attach the BTrace client to the given Java process.
+ * Loads BTrace agent on the target process if not loaded
+ * already.
+ */
+public void attach(String pid, String sysCp, String bootCp) throws IOException {
+    try {
+        String agentPath = "/btrace-agent.jar";
+        String tmp = Client.class.getClassLoader().getResource("com/sun/btrace").toString();
+        tmp = tmp.substring(0, tmp.indexOf('!'));
+        tmp = tmp.substring("jar:".length(), tmp.lastIndexOf('/'));
+        agentPath = tmp + agentPath;
+        agentPath = new File(new URI(agentPath)).getAbsolutePath();
+        attach(pid, agentPath, sysCp, bootCp);
+    } catch (RuntimeException re) {
+        throw re;
+    } catch (IOException ioexp) {
+        throw ioexp;
+    } catch (Exception exp) {
+        throw new IOException(exp.getMessage());
+    }
+}
+```
+
+## agent // TODO
+
+- 添加 classpath
+- 开启一个 ServerSocket
+
+`processClasspaths(libs);`
+
+```java
+
+// ignore String bootClassPath = argMap.get("bootClassPath");
+nst.appendToBootstrapClassLoaderSearch(jf);
+// ignore
+
+// ignore String systemClassPath = argMap.get("systemClassPath");
+inst.appendToSystemClassLoaderSearch(jf);
+// ignore
+
+ddPreconfLibs(libs);
+
+```
+
+```java
+private static synchronized void main(final String args, final Instrumentation inst) {
+    if (Main.inst != null) {
+        return;
+    } else {
+        Main.inst = inst;
+    }
+
+    try {
+        loadArgs(args);
+        // set the debug level based on cmdline config
+        settings.setDebug(Boolean.parseBoolean(argMap.get("debug")));
+        if (isDebug()) {
+            debugPrint("parsed command line arguments");
+        }
+        parseArgs();
+
+        int startedScripts = startScripts();
+
+        String tmp = argMap.get("noServer");
+        // noServer is defaulting to true if startup scripts are defined
+        boolean noServer = tmp != null ? Boolean.parseBoolean(tmp) : hasScripts();
+        if (noServer) {
+            if (isDebug()) {
+                debugPrint("noServer is true, server not started");
+            }
+            return;
+        }
+        Thread agentThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                BTraceRuntime.enter();
+                try {
+                    startServer();
+                } finally {
+                    BTraceRuntime.leave();
+                }
+            }
+        });
+        BTraceRuntime.initUnsafe();
+        BTraceRuntime.enter();
+        try {
+            agentThread.setDaemon(true);
+            if (isDebug()) {
+                debugPrint("starting agent thread");
+            }
+            agentThread.start();
+        } finally {
+            BTraceRuntime.leave();
+        }
+    } finally {
+        inst.addTransformer(transformer, true);
+        Main.debugPrint("Agent init took: " + (System.nanoTime() - ts) + "ns");
+    }
+}
+```
+
+``` java
+void retransformLoaded() throws UnmodifiableClassException {
+    if (runtime != null) {
+        if (probe.isTransforming() && settings.isRetransformStartup()) {
+            ArrayList<Class> list = new ArrayList<>();
+            debugPrint("retransforming loaded classes");
+            debugPrint("filtering loaded classes");
+            ClassCache cc = ClassCache.getInstance();
+            for (Class c : inst.getAllLoadedClasses()) {
+                if (c != null) {
+                    cc.get(c);
+                    if (inst.isModifiableClass(c) &&  isCandidate(c)) {
+                        debugPrint("candidate " + c + " added");
+                        list.add(c);
+                    }
+                }
+            }
+            list.trimToSize();
+            int size = list.size();
+            if (size > 0) {
+                Class[] classes = new Class[size];
+                list.toArray(classes);
+                startRetransformClasses(size);
+                if (isDebug()) {
+                    for(Class c : classes) {
+                        try {
+                            debugPrint("Attempting to retransform class: " + c.getName());
+                            inst.retransformClasses(c);
+                        } catch (VerifyError e) {
+                            debugPrint("verification error: " + c.getName());
+                        }
+                    }
+                } else {
+                    inst.retransformClasses(classes);
+                }
+            }
+        }
+        runtime.send(new OkayCommand());
+    }
+}
+```
+
 # Brtace 使用
 
 ``` sh
 btrace {pid} Debug.java
 ```
-
-<!-- more -->
 
 ## 方法内方法调用
 
@@ -36,7 +214,7 @@ btrace {pid} Debug.java
 ## 方法调用盏
 
 ``` java
-@OnMethod(clazz = "/.*ProductService.*/", method = "/.*fillProduct.*/",
+@OnMethod(clazz = "/.*className.*/", method = "/.*methodName.*/",
         location = @Location(value = Kind.CALL, clazz = "/.*/", method = "/.*/", where = Where.AFTER))
     public static void callStack(@ProbeClassName String probeClassName,
                                  @ProbeMethodName String probeMethod) {
