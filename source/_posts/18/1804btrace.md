@@ -70,6 +70,9 @@ public void attach(String pid, String sysCp, String bootCp) throws IOException {
 
 - 添加 classpath
 - 开启一个 ServerSocket
+- 收到指令后, 主要有
+  - 重写类 遍历当前class, 正则匹配到class
+  - 转换类 替换原来的class
 
 `processClasspaths(libs);`
 
@@ -184,6 +187,62 @@ void retransformLoaded() throws UnmodifiableClassException {
         runtime.send(new OkayCommand());
     }
 }
+```
+
+``` java
+
+@Override
+public synchronized byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+    if (probes.isEmpty()) return null;
+
+    className = className != null ? className : "<anonymous>";
+
+    if ((loader == null || loader.equals(ClassLoader.getSystemClassLoader())) && isSensitiveClass(className)) {
+        if (isDebug()) {
+            debugPrint("skipping transform for BTrace class " + className); // NOI18N
+        }
+        return null;
+    }
+
+    if (filter.matchClass(className) == Filter.Result.FALSE) return null;
+
+    boolean entered = BTraceRuntime.enter();
+    try {
+        if (isDebug()) {
+            debug.dumpClass(className.replace('.', '/') + "_orig", classfileBuffer);
+        }
+        BTraceClassReader cr = InstrumentUtils.newClassReader(loader, classfileBuffer);
+        BTraceClassWriter cw = InstrumentUtils.newClassWriter(cr);
+        for(BTraceProbe p : probes) {
+            p.notifyTransform(className);
+            cw.addInstrumentor(p, loader);
+        }
+        byte[] transformed = cw.instrument();
+        if (transformed == null) {
+            // no instrumentation necessary
+            if (isDebug()) {
+                debugPrint("skipping class " + cr.getJavaClassName());
+            }
+            return classfileBuffer;
+        } else {
+            if (isDebug()) {
+                debugPrint("transformed class " + cr.getJavaClassName());
+            }
+            if (debug.isDumpClasses()) {
+                debug.dumpClass(className.replace('.', '/'), transformed);
+            }
+        }
+        return transformed;
+    } catch (Throwable th) {
+        debugPrint(th);
+        throw th;
+    } finally {
+        if (entered) {
+            BTraceRuntime.leave();
+        }
+    }
+}
+
 ```
 
 # Brtace 使用
