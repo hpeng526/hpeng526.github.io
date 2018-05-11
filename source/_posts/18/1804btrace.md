@@ -1,7 +1,7 @@
 ---
 title: btrace 笔记
-date: 2018-04-28 22:10:00
-tags: [travis, hexo]
+date: 2018-05-09 23:10:00
+tags: [btrace, debug]
 ---
 
 [Btrace](https://github.com/btraceio/btrace) - a safe, dynamic tracing tool for the Java platform
@@ -66,7 +66,7 @@ public void attach(String pid, String sysCp, String bootCp) throws IOException {
 }
 ```
 
-## agent // TODO
+## agent 
 
 - 添加 classpath
 - 开启一个 ServerSocket
