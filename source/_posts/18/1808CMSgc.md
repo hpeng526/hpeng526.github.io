@@ -4,6 +4,8 @@ date: 2018-08-06 22:01:00
 tags: [JVM, CMS, GC]
 ---
 
+## CMS 介绍
+
 CMS, Concurrent Mark Sweep, 并发的标记清楚算法GC.
 
 ### CMS 执行
@@ -29,6 +31,8 @@ CMS, Concurrent Mark Sweep, 并发的标记清楚算法GC.
 -XX:+PrintGCDetails                                 // 打印 GC 详细信息
 -XX:+PrintGCDateStamps                              // 输出GC的时间戳
 ```
+
+<!-- more -->
 
 CMS GC log 如下
 ``` CMS GC log
