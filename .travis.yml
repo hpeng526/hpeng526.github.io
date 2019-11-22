@@ -1,12 +1,10 @@
-language: node_js
-node_js: stable
-
+---
 install:
-  - npm install
+  - wget -O /tmp/hugo.deb https://github.com/gohugoio/hugo/releases/download/v0.59.1/hugo_0.59.1_Linux-64bit.deb
+  - sudo dpkg -i /tmp/hugo.deb
 
 script:
-  - hexo cl
-  - hexo g
+  - hugo
 
 after_script:
   - cd ./public

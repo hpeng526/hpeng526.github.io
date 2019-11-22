@@ -1,0 +1,16 @@
+baseURL = "https://hpeng526.github.io/"
+languageCode = "zh-cn"
+title = "hpeng526"
+theme = "m10c"
+
+hasCJKLanguage = true
+pygmentsCodefences = true
+pygmentsStyle = "dracula"
+
+[params]
+  author = "hpeng526"
+  description = "Notes"
+  
+  [[params.social]]
+    name = "github"
+    url = "https://github.com/hpeng526"
