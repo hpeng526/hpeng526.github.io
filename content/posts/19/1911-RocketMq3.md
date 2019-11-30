@@ -157,8 +157,8 @@ RocketMQ就提供这种机制，producer 实现`MessageQueueSelector`来对消�
 TL;DR
 
 1. broker Message Queue 全局锁
-    1.1 集群模式中 consumer 要先获取 broker 上 Message Queue 的锁，才能进行消费
-    1.2 广播模式不可用
+  1.1 集群模式中 consumer 要先获取 broker 上 Message Queue 的锁，才能进行消费
+  1.2 广播模式不可用
 2. consumer 本地消息队列锁，持有锁操作此Queue
 3. consumer 消费锁，持有锁才能消费消息
     保证消息顺序处理的细粒度锁
@@ -556,6 +556,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
 4. SUSPEND_CURRENT_QUEUE_A_MOMENT：消费失败，挂起消费队列一会会，稍后继续消费。
 
 开启的话
+
 1. SUCCESS：消费成功并提交
 2. SUSPEND_CURRENT_QUEUE_A_MOMENT：消费失败，挂起消费队列一会会，稍后继续消费。
 
