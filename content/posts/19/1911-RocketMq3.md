@@ -156,7 +156,7 @@ RocketMQ就提供这种机制，producer 实现`MessageQueueSelector`来对消�
 
 TL;DR
 
-1. broker Message Queue 全局锁
+1. broker Message Queue 全局锁 (RebalanceImpl), 保证queue的分配唯一的消费者
     - 集群模式中 consumer 要先获取 broker 上 Message Queue 的锁，才能进行消费
     - 广播模式不可用
 2. consumer 本地消息队列锁，持有锁操作此Queue
@@ -398,7 +398,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
             }
 
             final Object objLock = messageQueueLock.fetchLockObject(this.messageQueue);
-            // 内部锁
+            // 本地消息队列锁, 控制在单队列消费中,只占用一个线程
             synchronized (objLock) {
                 if (MessageModel.BROADCASTING.equals(ConsumeMessageOrderlyService.this.defaultMQPushConsumerImpl.messageModel())
                     || (this.processQueue.isLocked() && !this.processQueue.isLockExpired())) {
@@ -571,4 +571,3 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
 ## 问题
 
 1. 上面描述的是局部顺序保证，要全局顺序保证只能Topic下只有一个Message Queue。
-
