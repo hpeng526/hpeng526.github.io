@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Flask on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/flask/</link>
+    <description>Recent content in Flask on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 29 May 2016 20:18:38 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/flask/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Docker 体验</title>
+      <link>https://hpeng526.github.io/posts/16/1605docker-%E4%BD%93%E9%AA%8C/</link>
+      <pubDate>Sun, 29 May 2016 20:18:38 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/16/1605docker-%E4%BD%93%E9%AA%8C/</guid>
+      <description>周末了，很早就想体验一下 Docker ，所以，就把很久以前用 Python + Flask 写的小项目用 Docker 部署一下。项目还用到了 Redis 所以，这次就简单的把所有东西揉在一个 Docker image 里好了。</description>
+    </item>
+    
+  </channel>
+</rss>

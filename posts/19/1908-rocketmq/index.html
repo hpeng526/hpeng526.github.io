@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>RocketMQ 事务消息 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="RocketMQ 事务消息"/>
+<meta name="twitter:description" content="什么是事务消息 (RocketMQ 4.5.1) RocketMQ 中, 可以把事务消息当成两阶段提交的消息, 用来确保分布式系统的最终一致性.事务消息确保可以以原子方式执行本地事务和消息发送"/>
+
+    <meta property="og:title" content="RocketMQ 事务消息" />
+<meta property="og:description" content="什么是事务消息 (RocketMQ 4.5.1) RocketMQ 中, 可以把事务消息当成两阶段提交的消息, 用来确保分布式系统的最终一致性.事务消息确保可以以原子方式执行本地事务和消息发送" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/19/1908-rocketmq/" />
+<meta property="article:published_time" content="2019-08-12T22:10:00+00:00" />
+<meta property="article:modified_time" content="2019-08-12T22:10:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">RocketMQ 事务消息</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Aug 12, 2019
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          7 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/java/">Java</a><a class="tag" href="https://hpeng526.github.io/tags/rocketmq/">RocketMQ</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="什么是事务消息-rocketmq-4-5-1">什么是事务消息 (RocketMQ 4.5.1)</h1>
+
+<p>RocketMQ 中, 可以把事务消息当成两阶段提交的消息, 用来确保分布式系统的最终一致性.事务消息确保可以以原子方式执行本地事务和消息发送.</p>
+
+<!-- more -->
+
+<h2 id="如何使用事务消息">如何使用事务消息</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class TransactionProducer {
+    public static void main(String[] args) throws MQClientException, InterruptedException {
+        TransactionListener transactionListener <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> TransactionListenerImpl();
+        TransactionMQProducer producer <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> TransactionMQProducer(<span style="color:#f1fa8c">&#34;please_rename_unique_group_name&#34;</span>);
+        ExecutorService executorService <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ThreadPoolExecutor(2, 5, 100, TimeUnit.<span style="color:#50fa7b">SECONDS</span>, <span style="color:#ff79c6">new</span> ArrayBlockingQueue<span style="color:#ff79c6">&lt;</span>Runnable<span style="color:#ff79c6">&gt;</span>(2000), <span style="color:#ff79c6">new</span> ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Thread(r);
+                thread.<span style="color:#50fa7b">setName</span>(<span style="color:#f1fa8c">&#34;client-transaction-msg-check-thread&#34;</span>);
+                <span style="color:#ff79c6">return</span> thread;
+            }
+        });
+
+        producer.<span style="color:#50fa7b">setExecutorService</span>(executorService);
+        producer.<span style="color:#50fa7b">setTransactionListener</span>(transactionListener);
+        producer.<span style="color:#50fa7b">start</span>();
+
+        String[] tags <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> String[] {<span style="color:#f1fa8c">&#34;TagA&#34;</span>, <span style="color:#f1fa8c">&#34;TagB&#34;</span>, <span style="color:#f1fa8c">&#34;TagC&#34;</span>, <span style="color:#f1fa8c">&#34;TagD&#34;</span>, <span style="color:#f1fa8c">&#34;TagE&#34;</span>};
+        <span style="color:#ff79c6">for</span> (int i <span style="color:#ff79c6">=</span> 0; i <span style="color:#ff79c6">&lt;</span> 10; i<span style="color:#ff79c6">++</span>) {
+            <span style="color:#ff79c6">try</span> {
+                Message msg <span style="color:#ff79c6">=</span>
+                    <span style="color:#ff79c6">new</span> Message(<span style="color:#f1fa8c">&#34;TopicTest1234&#34;</span>, tags[i <span style="color:#ff79c6">%</span> tags.<span style="color:#50fa7b">length</span>], <span style="color:#f1fa8c">&#34;KEY&#34;</span> <span style="color:#ff79c6">+</span> i,
+                        (<span style="color:#f1fa8c">&#34;Hello RocketMQ &#34;</span> <span style="color:#ff79c6">+</span> i).<span style="color:#50fa7b">getBytes</span>(RemotingHelper.<span style="color:#50fa7b">DEFAULT_CHARSET</span>));
+                SendResult sendResult <span style="color:#ff79c6">=</span> producer.<span style="color:#50fa7b">sendMessageInTransaction</span>(msg, <span style="color:#ff79c6">null</span>);
+                System.<span style="color:#50fa7b">out</span>.<span style="color:#50fa7b">printf</span>(<span style="color:#f1fa8c">&#34;%s%n&#34;</span>, sendResult);
+
+                Thread.<span style="color:#50fa7b">sleep</span>(10);
+            } <span style="color:#ff79c6">catch</span> (MQClientException <span style="color:#ff79c6">|</span> UnsupportedEncodingException e) {
+                e.<span style="color:#50fa7b">printStackTrace</span>();
+            }
+        }
+
+        <span style="color:#ff79c6">for</span> (int i <span style="color:#ff79c6">=</span> 0; i <span style="color:#ff79c6">&lt;</span> 100000; i<span style="color:#ff79c6">++</span>) {
+            Thread.<span style="color:#50fa7b">sleep</span>(1000);
+        }
+        producer.<span style="color:#50fa7b">shutdown</span>();
+    }
+}</code></pre></div>
+<p>从官方例子可以看出, 主要是 <code>TransactionMQProducer</code> 作为 producer 的实现类, <code>TransactionListener</code> 做为本地事务处理的接口</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public interface TransactionListener {
+    <span style="color:#6272a4">/**
+</span><span style="color:#6272a4">     * When send transactional prepare(half) message succeed, this method will be invoked to execute local transaction.
+</span><span style="color:#6272a4">     *
+</span><span style="color:#6272a4">     * @param msg Half(prepare) message
+</span><span style="color:#6272a4">     * @param arg Custom business parameter
+</span><span style="color:#6272a4">     * @return Transaction state
+</span><span style="color:#6272a4">     */</span>
+    LocalTransactionState executeLocalTransaction(final Message msg, final Object arg);
+
+    <span style="color:#6272a4">/**
+</span><span style="color:#6272a4">     * When no response to prepare(half) message. broker will send check message to check the transaction status, and this
+</span><span style="color:#6272a4">     * method will be invoked to get local transaction status.
+</span><span style="color:#6272a4">     *
+</span><span style="color:#6272a4">     * @param msg Check message
+</span><span style="color:#6272a4">     * @return Transaction state
+</span><span style="color:#6272a4">     */</span>
+    LocalTransactionState checkLocalTransaction(final MessageExt msg);
+}</code></pre></div>
+<h2 id="rocketmq-内部是怎么实现的">RocketMQ 内部是怎么实现的</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">    <span style="color:#6272a4">// 发送事务消息
+</span><span style="color:#6272a4"></span>    public TransactionSendResult sendMessageInTransaction(final Message msg,
+                                                          final LocalTransactionExecuter localTransactionExecuter, final Object arg)
+        throws MQClientException {
+        TransactionListener transactionListener <span style="color:#ff79c6">=</span> getCheckListener();
+        <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> localTransactionExecuter <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> transactionListener) {
+            <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> MQClientException(<span style="color:#f1fa8c">&#34;tranExecutor is null&#34;</span>, <span style="color:#ff79c6">null</span>);
+        }
+        Validators.<span style="color:#50fa7b">checkMessage</span>(msg, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQProducer</span>);
+
+        SendResult sendResult <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+        <span style="color:#6272a4">// 设置消息为事务消息
+</span><span style="color:#6272a4"></span>        <span style="color:#6272a4">// 设置 property TRAN_MSG:true
+</span><span style="color:#6272a4"></span>        MessageAccessor.<span style="color:#50fa7b">putProperty</span>(msg, MessageConst.<span style="color:#50fa7b">PROPERTY_TRANSACTION_PREPARED</span>, <span style="color:#f1fa8c">&#34;true&#34;</span>);
+        MessageAccessor.<span style="color:#50fa7b">putProperty</span>(msg, MessageConst.<span style="color:#50fa7b">PROPERTY_PRODUCER_GROUP</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQProducer</span>.<span style="color:#50fa7b">getProducerGroup</span>());
+        <span style="color:#ff79c6">try</span> {
+            sendResult <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">send</span>(msg);
+        } <span style="color:#ff79c6">catch</span> (Exception e) {
+            <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> MQClientException(<span style="color:#f1fa8c">&#34;send message Exception&#34;</span>, e);
+        }
+
+        LocalTransactionState localTransactionState <span style="color:#ff79c6">=</span> LocalTransactionState.<span style="color:#50fa7b">UNKNOW</span>;
+        Throwable localException <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+        <span style="color:#ff79c6">switch</span> (sendResult.<span style="color:#50fa7b">getSendStatus</span>()) {
+            <span style="color:#ff79c6">case</span> SEND_OK<span style="color:#ff79c6">:</span> {
+                <span style="color:#ff79c6">try</span> {
+                    <span style="color:#ff79c6">if</span> (sendResult.<span style="color:#50fa7b">getTransactionId</span>() <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                        msg.<span style="color:#50fa7b">putUserProperty</span>(<span style="color:#f1fa8c">&#34;__transactionId__&#34;</span>, sendResult.<span style="color:#50fa7b">getTransactionId</span>());
+                    }
+                    String transactionId <span style="color:#ff79c6">=</span> msg.<span style="color:#50fa7b">getProperty</span>(MessageConst.<span style="color:#50fa7b">PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX</span>);
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">!=</span> transactionId <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">!</span><span style="color:#f1fa8c">&#34;&#34;</span>.<span style="color:#50fa7b">equals</span>(transactionId)) {
+                        msg.<span style="color:#50fa7b">setTransactionId</span>(transactionId);
+                    }
+                    <span style="color:#6272a4">// 处理本地事务
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">!=</span> localTransactionExecuter) {
+                        localTransactionState <span style="color:#ff79c6">=</span> localTransactionExecuter.<span style="color:#50fa7b">executeLocalTransactionBranch</span>(msg, arg);
+                    } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (transactionListener <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                        log.<span style="color:#50fa7b">debug</span>(<span style="color:#f1fa8c">&#34;Used new transaction API&#34;</span>);
+                        localTransactionState <span style="color:#ff79c6">=</span> transactionListener.<span style="color:#50fa7b">executeLocalTransaction</span>(msg, arg);
+                    }
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> localTransactionState) {
+                        localTransactionState <span style="color:#ff79c6">=</span> LocalTransactionState.<span style="color:#50fa7b">UNKNOW</span>;
+                    }
+
+                    <span style="color:#ff79c6">if</span> (localTransactionState <span style="color:#ff79c6">!=</span> LocalTransactionState.<span style="color:#50fa7b">COMMIT_MESSAGE</span>) {
+                        log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;executeLocalTransactionBranch return {}&#34;</span>, localTransactionState);
+                        log.<span style="color:#50fa7b">info</span>(msg.<span style="color:#50fa7b">toString</span>());
+                    }
+                } <span style="color:#ff79c6">catch</span> (Throwable e) {
+                    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;executeLocalTransactionBranch exception&#34;</span>, e);
+                    log.<span style="color:#50fa7b">info</span>(msg.<span style="color:#50fa7b">toString</span>());
+                    localException <span style="color:#ff79c6">=</span> e;
+                }
+            }
+            <span style="color:#ff79c6">break</span>;
+            <span style="color:#ff79c6">case</span> FLUSH_DISK_TIMEOUT<span style="color:#ff79c6">:</span>
+            <span style="color:#ff79c6">case</span> FLUSH_SLAVE_TIMEOUT<span style="color:#ff79c6">:</span>
+            <span style="color:#ff79c6">case</span> SLAVE_NOT_AVAILABLE<span style="color:#ff79c6">:</span>
+                localTransactionState <span style="color:#ff79c6">=</span> LocalTransactionState.<span style="color:#50fa7b">ROLLBACK_MESSAGE</span>;
+                <span style="color:#ff79c6">break</span>;
+            <span style="color:#ff79c6">default</span><span style="color:#ff79c6">:</span>
+                <span style="color:#ff79c6">break</span>;
+        }
+
+        <span style="color:#ff79c6">try</span> {
+            <span style="color:#6272a4">// 本地消息处理后
+</span><span style="color:#6272a4"></span>            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">endTransaction</span>(sendResult, localTransactionState, localException);
+        } <span style="color:#ff79c6">catch</span> (Exception e) {
+            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;local transaction execute &#34;</span> <span style="color:#ff79c6">+</span> localTransactionState <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;, but end broker transaction failed&#34;</span>, e);
+        }
+
+        TransactionSendResult transactionSendResult <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> TransactionSendResult();
+        transactionSendResult.<span style="color:#50fa7b">setSendStatus</span>(sendResult.<span style="color:#50fa7b">getSendStatus</span>());
+        transactionSendResult.<span style="color:#50fa7b">setMessageQueue</span>(sendResult.<span style="color:#50fa7b">getMessageQueue</span>());
+        transactionSendResult.<span style="color:#50fa7b">setMsgId</span>(sendResult.<span style="color:#50fa7b">getMsgId</span>());
+        transactionSendResult.<span style="color:#50fa7b">setQueueOffset</span>(sendResult.<span style="color:#50fa7b">getQueueOffset</span>());
+        transactionSendResult.<span style="color:#50fa7b">setTransactionId</span>(sendResult.<span style="color:#50fa7b">getTransactionId</span>());
+        transactionSendResult.<span style="color:#50fa7b">setLocalTransactionState</span>(localTransactionState);
+        <span style="color:#ff79c6">return</span> transactionSendResult;
+    }</code></pre></div>
+<p>client 主要的工作</p>
+
+<ol>
+<li>为消息添加事务消息标识属性 TRAN_MSG:True</li>
+<li>添加属性 PGROUP 生产者所在的消息组</li>
+<li>调用默认的生产者实现<code>DefaultMQProducerImpl</code>, 判断如果是事务消息, 则标记消息类型为<code>Trans_Msg_Half</code> 预提交阶段(半消息)</li>
+<li>发送成功后, 执行本地事务</li>
+<li>根据本地事务返回的结果执行<code>endTransaction</code></li>
+<li><code>endTransaction</code> 里面实际是把本地事务执行结果, 设置在 CommitOrRollback 头中, 再发送给broker, 标识为 <code>END_TRANSACTION</code>.</li>
+</ol>
+
+<p>endTransaction</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">    public void endTransaction(
+        final SendResult sendResult,
+        final LocalTransactionState localTransactionState,
+        final Throwable localException) throws RemotingException, MQBrokerException, InterruptedException, UnknownHostException {
+        final MessageId id;
+        <span style="color:#ff79c6">if</span> (sendResult.<span style="color:#50fa7b">getOffsetMsgId</span>() <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+            id <span style="color:#ff79c6">=</span> MessageDecoder.<span style="color:#50fa7b">decodeMessageId</span>(sendResult.<span style="color:#50fa7b">getOffsetMsgId</span>());
+        } <span style="color:#ff79c6">else</span> {
+            id <span style="color:#ff79c6">=</span> MessageDecoder.<span style="color:#50fa7b">decodeMessageId</span>(sendResult.<span style="color:#50fa7b">getMsgId</span>());
+        }
+        String transactionId <span style="color:#ff79c6">=</span> sendResult.<span style="color:#50fa7b">getTransactionId</span>();
+        final String brokerAddr <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">mQClientFactory</span>.<span style="color:#50fa7b">findBrokerAddressInPublish</span>(sendResult.<span style="color:#50fa7b">getMessageQueue</span>().<span style="color:#50fa7b">getBrokerName</span>());
+        EndTransactionRequestHeader requestHeader <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> EndTransactionRequestHeader();
+        requestHeader.<span style="color:#50fa7b">setTransactionId</span>(transactionId);
+        requestHeader.<span style="color:#50fa7b">setCommitLogOffset</span>(id.<span style="color:#50fa7b">getOffset</span>());
+        <span style="color:#ff79c6">switch</span> (localTransactionState) {
+            <span style="color:#ff79c6">case</span> COMMIT_MESSAGE<span style="color:#ff79c6">:</span> <span style="color:#6272a4">// 本地事务处理成功, 设置 commit ,提交事务
+</span><span style="color:#6272a4"></span>                requestHeader.<span style="color:#50fa7b">setCommitOrRollback</span>(MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_COMMIT_TYPE</span>);
+                <span style="color:#ff79c6">break</span>;
+            <span style="color:#ff79c6">case</span> ROLLBACK_MESSAGE<span style="color:#ff79c6">:</span> <span style="color:#6272a4">// 本地事务处理失败, 设置 rollback, 回滚事务
+</span><span style="color:#6272a4"></span>                requestHeader.<span style="color:#50fa7b">setCommitOrRollback</span>(MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_ROLLBACK_TYPE</span>);
+                <span style="color:#ff79c6">break</span>;
+            <span style="color:#ff79c6">case</span> UNKNOW<span style="color:#ff79c6">:</span>
+                requestHeader.<span style="color:#50fa7b">setCommitOrRollback</span>(MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_NOT_TYPE</span>);
+                <span style="color:#ff79c6">break</span>;
+            <span style="color:#ff79c6">default</span><span style="color:#ff79c6">:</span>
+                <span style="color:#ff79c6">break</span>;
+        }
+
+        requestHeader.<span style="color:#50fa7b">setProducerGroup</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQProducer</span>.<span style="color:#50fa7b">getProducerGroup</span>());
+        requestHeader.<span style="color:#50fa7b">setTranStateTableOffset</span>(sendResult.<span style="color:#50fa7b">getQueueOffset</span>());
+        requestHeader.<span style="color:#50fa7b">setMsgId</span>(sendResult.<span style="color:#50fa7b">getMsgId</span>());
+        String remark <span style="color:#ff79c6">=</span> localException <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">?</span> (<span style="color:#f1fa8c">&#34;executeLocalTransactionBranch exception: &#34;</span> <span style="color:#ff79c6">+</span> localException.<span style="color:#50fa7b">toString</span>()) <span style="color:#ff79c6">:</span> <span style="color:#ff79c6">null</span>;
+        <span style="color:#6272a4">// end transaction broker EndTransactionProcessor
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">mQClientFactory</span>.<span style="color:#50fa7b">getMQClientAPIImpl</span>().<span style="color:#50fa7b">endTransactionOneway</span>(brokerAddr, requestHeader, remark,
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQProducer</span>.<span style="color:#50fa7b">getSendMsgTimeout</span>());
+    }</code></pre></div>
+<p>总流程</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">                                  +------------------------+         +
+                                  |                        |         | <span style="color:#bd93f9">1</span>. add property TRAN_MSG:TRUE
+sendMessageInTransation +--------&gt;+  TransationMQProducer  +&lt;--------+ <span style="color:#bd93f9">2</span>. add property PGROUP
+                                  |                        |         |
+                                  +-----------+------------+         +
+                                              |
+                                              |
+                              +---------------v----------------+     +
+                              |                                |     | <span style="color:#bd93f9">1</span>. setMsgType Trans_Msg_Half
+                              |     DefaultMQProducerImpl#Send +&lt;----+
+                              |                                |     |
+                              +---------------+----------------+     +
+                                              |
+                                              | Sync
+                                              |
+                              +---------------v----------------+     +
+                              |                                |     | <span style="color:#bd93f9">1</span>. broker
+                              |    SendMessageProcessor        +&lt;----+
+                              |                                |     |
+                              +---------------+----------------+     +
+                                              |
+                                              | send Success
+                                              |
+                                  +-----------v------------+         +
+                                  |                        |         | <span style="color:#bd93f9">1</span>. new/old api
+                                  | <span style="color:#8be9fd;font-style:italic">exec</span> <span style="color:#8be9fd;font-style:italic">local</span> transaction +&lt;--------+
+                                  |                        |         |
+                                  +-----------+------------+         +
+                                              |
+                                              | <span style="color:#ff79c6">return</span> <span style="color:#8be9fd;font-style:italic">local</span> state
+                                              |
+                                    +---------v------------+
+                                    |                      |
+                                    |  <span style="color:#bd93f9">1</span>. COMMIT_MESSAGE   |
+                                    |  <span style="color:#bd93f9">2</span>. ROLLBACK_MESSAGE |
+                                    |  <span style="color:#bd93f9">3</span>. UNKNOW           |
+                                    |                      |
+                                    +---------+------------+
+                                              |
+                                              | <span style="color:#8be9fd;font-style:italic">exec</span>
+                                              |
+                                      +-------v----------+           +
+                                      |                  |           | <span style="color:#bd93f9">1</span>. <span style="color:#8be9fd;font-style:italic">set</span> EndTransactionRequestHeader
+                                      |  endTransaction  +&lt;----------+ <span style="color:#bd93f9">2</span>. endTransactionOneWay
+                                      |                  |           | <span style="color:#bd93f9">3</span>. cmd END_TRANSACTION
+                                      +------------------+           +</code></pre></div>
+<h2 id="broker-的工作">broker 的工作</h2>
+
+<ol>
+<li>判断是否是事务消息</li>
+<li>处理半消息
+2.1 备份原消息的主题跟原队列id
+2.2 重新设置消息topic为<code>RMQ_SYS_TRANS_HALF_TOPIC</code></li>
+
+<li><p>持久化</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// 事务消息处理
+</span><span style="color:#6272a4"></span>private MessageExtBrokerInner parseHalfMessageInner(MessageExtBrokerInner msgInner) {
+    <span style="color:#6272a4">// 把原消息的 topic 备份到 property
+</span><span style="color:#6272a4"></span>    MessageAccessor.<span style="color:#50fa7b">putProperty</span>(msgInner, MessageConst.<span style="color:#50fa7b">PROPERTY_REAL_TOPIC</span>, msgInner.<span style="color:#50fa7b">getTopic</span>());
+    <span style="color:#6272a4">// 把原消息的 queue 备份到 property
+</span><span style="color:#6272a4"></span>    MessageAccessor.<span style="color:#50fa7b">putProperty</span>(msgInner, MessageConst.<span style="color:#50fa7b">PROPERTY_REAL_QUEUE_ID</span>,
+        String.<span style="color:#50fa7b">valueOf</span>(msgInner.<span style="color:#50fa7b">getQueueId</span>()));
+    msgInner.<span style="color:#50fa7b">setSysFlag</span>(
+        MessageSysFlag.<span style="color:#50fa7b">resetTransactionValue</span>(msgInner.<span style="color:#50fa7b">getSysFlag</span>(), MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_NOT_TYPE</span>));
+    <span style="color:#6272a4">// 设置特殊的半消息 topic RMQ_SYS_TRANS_HALF_TOPIC
+</span><span style="color:#6272a4"></span>    msgInner.<span style="color:#50fa7b">setTopic</span>(TransactionalMessageUtil.<span style="color:#50fa7b">buildHalfTopic</span>());
+    <span style="color:#6272a4">// 设置特殊的 queueId 固定为 0
+</span><span style="color:#6272a4"></span>    msgInner.<span style="color:#50fa7b">setQueueId</span>(0);
+    msgInner.<span style="color:#50fa7b">setPropertiesString</span>(MessageDecoder.<span style="color:#50fa7b">messageProperties2String</span>(msgInner.<span style="color:#50fa7b">getProperties</span>()));
+    <span style="color:#ff79c6">return</span> msgInner;
+}</code></pre></div></li>
+
+<li><p>EndTransactionRequest, 处理 commit 和 rollback 消息 (client#endTransaction)
+4.1 如果是 commit 消息, <strong>还原原有主题跟队列</strong>
+4.2 跟普通消息一样.
+4.3 存储已经处理的消息在<code>RMQ_SYS_TRANS_OP_HALF_TOPIC</code>
+4.4 如果是 rollback 消息, 讲消息写入 <code>RMQ_SYS_TRANS_OP_HALF_TOPIC</code>, 标记删除tag</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">OperationResult result <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> OperationResult();
+    <span style="color:#ff79c6">if</span> (MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_COMMIT_TYPE</span> <span style="color:#ff79c6">==</span> requestHeader.<span style="color:#50fa7b">getCommitOrRollback</span>()) {
+        <span style="color:#6272a4">// 如果是commit
+</span><span style="color:#6272a4"></span>        <span style="color:#6272a4">// 这里实际是通过 offSet 查到commitLog requestHeader.getCommitLogOffset()
+</span><span style="color:#6272a4"></span>        result <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">brokerController</span>.<span style="color:#50fa7b">getTransactionalMessageService</span>().<span style="color:#50fa7b">commitMessage</span>(requestHeader);
+        <span style="color:#ff79c6">if</span> (result.<span style="color:#50fa7b">getResponseCode</span>() <span style="color:#ff79c6">==</span> ResponseCode.<span style="color:#50fa7b">SUCCESS</span>) {
+            RemotingCommand res <span style="color:#ff79c6">=</span> checkPrepareMessage(result.<span style="color:#50fa7b">getPrepareMessage</span>(), requestHeader);
+            <span style="color:#ff79c6">if</span> (res.<span style="color:#50fa7b">getCode</span>() <span style="color:#ff79c6">==</span> ResponseCode.<span style="color:#50fa7b">SUCCESS</span>) {
+                <span style="color:#6272a4">// 消息还原
+</span><span style="color:#6272a4"></span>                MessageExtBrokerInner msgInner <span style="color:#ff79c6">=</span> endMessageTransaction(result.<span style="color:#50fa7b">getPrepareMessage</span>());
+                msgInner.<span style="color:#50fa7b">setSysFlag</span>(MessageSysFlag.<span style="color:#50fa7b">resetTransactionValue</span>(msgInner.<span style="color:#50fa7b">getSysFlag</span>(), requestHeader.<span style="color:#50fa7b">getCommitOrRollback</span>()));
+                msgInner.<span style="color:#50fa7b">setQueueOffset</span>(requestHeader.<span style="color:#50fa7b">getTranStateTableOffset</span>());
+                msgInner.<span style="color:#50fa7b">setPreparedTransactionOffset</span>(requestHeader.<span style="color:#50fa7b">getCommitLogOffset</span>());
+                msgInner.<span style="color:#50fa7b">setStoreTimestamp</span>(result.<span style="color:#50fa7b">getPrepareMessage</span>().<span style="color:#50fa7b">getStoreTimestamp</span>());
+                <span style="color:#6272a4">// 最终消息处理还是走原有的普通消息 this.brokerController.getMessageStore().putMessage
+</span><span style="color:#6272a4"></span>                RemotingCommand sendResult <span style="color:#ff79c6">=</span> sendFinalMessage(msgInner);
+                <span style="color:#ff79c6">if</span> (sendResult.<span style="color:#50fa7b">getCode</span>() <span style="color:#ff79c6">==</span> ResponseCode.<span style="color:#50fa7b">SUCCESS</span>) {
+                    <span style="color:#6272a4">// 删除半消息 实际是存储在 RMQ_SYS_TRANS_OP_HALF_TOPIC 中, 表示事务消息已经被处理了
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">brokerController</span>.<span style="color:#50fa7b">getTransactionalMessageService</span>().<span style="color:#50fa7b">deletePrepareMessage</span>(result.<span style="color:#50fa7b">getPrepareMessage</span>());
+                }
+                <span style="color:#ff79c6">return</span> sendResult;
+            }
+            <span style="color:#ff79c6">return</span> res;
+        }
+    } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_ROLLBACK_TYPE</span> <span style="color:#ff79c6">==</span> requestHeader.<span style="color:#50fa7b">getCommitOrRollback</span>()) {
+        <span style="color:#6272a4">// 如果是回滚
+</span><span style="color:#6272a4"></span>        result <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">brokerController</span>.<span style="color:#50fa7b">getTransactionalMessageService</span>().<span style="color:#50fa7b">rollbackMessage</span>(requestHeader);
+        <span style="color:#ff79c6">if</span> (result.<span style="color:#50fa7b">getResponseCode</span>() <span style="color:#ff79c6">==</span> ResponseCode.<span style="color:#50fa7b">SUCCESS</span>) {
+            RemotingCommand res <span style="color:#ff79c6">=</span> checkPrepareMessage(result.<span style="color:#50fa7b">getPrepareMessage</span>(), requestHeader);
+            <span style="color:#ff79c6">if</span> (res.<span style="color:#50fa7b">getCode</span>() <span style="color:#ff79c6">==</span> ResponseCode.<span style="color:#50fa7b">SUCCESS</span>) {
+                <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">brokerController</span>.<span style="color:#50fa7b">getTransactionalMessageService</span>().<span style="color:#50fa7b">deletePrepareMessage</span>(result.<span style="color:#50fa7b">getPrepareMessage</span>());
+            }
+            <span style="color:#ff79c6">return</span> res;
+        }
+    }</code></pre></div></li>
+</ol>
+
+<h2 id="消息回查">消息回查</h2>
+
+<ol>
+<li>半消息提交到topic<code>RMQ_SYS_TRANS_HALF_TOPIC</code></li>
+
+<li><p>消息处理后(commit/rollback)提交到topic<code>RMQ_SYS_TRANS_OP_HALF_TOPIC</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// TransactionalMessageCheckService.java
+</span><span style="color:#6272a4"></span>@Override
+public void run() {
+    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Start transaction check service thread!&#34;</span>);
+    <span style="color:#6272a4">// 默认 60s
+</span><span style="color:#6272a4"></span>    long checkInterval <span style="color:#ff79c6">=</span> brokerController.<span style="color:#50fa7b">getBrokerConfig</span>().<span style="color:#50fa7b">getTransactionCheckInterval</span>();
+    <span style="color:#ff79c6">while</span> (<span style="color:#ff79c6">!</span><span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">isStopped</span>()) {
+        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">waitForRunning</span>(checkInterval);
+    }
+    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;End transaction check service thread!&#34;</span>);
+}
+
+@Override
+protected void onWaitEnd() {
+    long timeout <span style="color:#ff79c6">=</span> brokerController.<span style="color:#50fa7b">getBrokerConfig</span>().<span style="color:#50fa7b">getTransactionTimeOut</span>();
+    <span style="color:#6272a4">// 事务最大检测次数
+</span><span style="color:#6272a4"></span>    int checkMax <span style="color:#ff79c6">=</span> brokerController.<span style="color:#50fa7b">getBrokerConfig</span>().<span style="color:#50fa7b">getTransactionCheckMax</span>();
+    long begin <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>();
+    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Begin to check prepare message, begin time:{}&#34;</span>, begin);
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">brokerController</span>.<span style="color:#50fa7b">getTransactionalMessageService</span>().<span style="color:#50fa7b">check</span>(timeout, checkMax, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">brokerController</span>.<span style="color:#50fa7b">getTransactionalMessageCheckListener</span>());
+    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;End to check prepare message, consumed time:{}&#34;</span>, System.<span style="color:#50fa7b">currentTimeMillis</span>() <span style="color:#ff79c6">-</span> begin);
+}</code></pre></div></li>
+
+<li><p>RocketMQ 在 broker 初始化的时候, 通过 <code>TransactionalMessageCheckService</code> 线程去定时检测 <code>RMQ_SYS_TRANS_HALF_TOPIC</code> 的消息, 回查消息事务状态</p></li>
+
+<li><p>遍历 Half <code>RMQ_SYS_TRANS_HALF_TOPIC</code> 队列消息</p></li>
+
+<li><p>根据 OP <code>RMQ_SYS_TRANS_OP_HALF_TOPIC</code> 队列判断是否已经处理</p></li>
+
+<li><p>更新 Half, OP 队列进度</p></li>
+
+<li><p>根据 OP 队列当前更新进度, 往后获取32条消息</p></li>
+
+<li><p>判断是否需要发送回查消息 (本地事务超时时间,消息有效性,消息是否发送回查消息)</p></li>
+
+<li><p>新线程发送回查</p></li>
+
+<li><p>更新 Half, OP 队列处理进度</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">                                                                                          +
+                                                                                          | <span style="color:#bd93f9">1</span>. RMQ_SYS_TRANS_HALF_TOPIC
+                                           +--------------------------------------+       | <span style="color:#bd93f9">2</span>. RMQ_SYS_TRANS_OP_HALF_TOPIC
+                                           |                                      |       | <span style="color:#bd93f9">3</span>. <span style="color:#8be9fd;font-style:italic">read</span> more OP
+TransactionalMessageCheckService +-----------&gt; | TransactionMessageCheckService#check | &lt;-----+ <span style="color:#bd93f9">4</span>. isNeedCheck
+                                           |                                      |       | <span style="color:#bd93f9">5</span>. check async
+                                           +------------------+-------------------+       | <span style="color:#bd93f9">6</span>. update offset
+                                                              |                           +
+                                                              |
+                                                              |
+                                                              v
+                                   +--------------------------+-------------------------------+      +
+                                   |                                                          |      |
+                                   | AbstractTransactionalMessageCheckListener#resolveHalfMsg | &lt;----+ <span style="color:#bd93f9">1</span>. sendCheckMessage
+                                   |                                                          |      |
+                                   +---------------------------+------------------------------+      +
+                                                               |
+                                                               |
+                                                               |
+                                                               |
+                                               +---------------v---------------+
+                                               |                               |
+                                               | checkProducerTransactionState |
+                                               |                               |
+                                               +---------------+---------------+
+                                                               |
+                                                               |   client site
+                                                               |
+                                        +----------------------v-----------------------+
+                                        |                                              |
+                                        | ClientRemotingProcessor#checkTransationState |
+                                        |                                              |
+                                        +-----------------------+----------------------+
+                                                                |
+                                                                |
+                                                                |
+                                        +-----------------------v-----------------------+
+                                        |                                               |
+                                        |  DefaultMQProducerImpl#checkTransactionState  |
+                                        |                                               |
+                                        +----------------------+------------------------+
+                                                               |
+                                                               |
+                                                               |
+                                         +---------------------v---------------------+
+                                         |                                           |
+                                         | TransactionListener#checkLocalTransaction |
+                                         |                                           |
+                                         +--------------------+----------------------+
+                                                              |
+                                                              |     send back to broker
+                                                              |
+                                                    +---------v---------+
+                                                    |                   |
+                                                    |  END_TRANSACTION  |
+                                                    |                   |
+                                                    +-------------------+</code></pre></div></li>
+
+<li><p>client 接受到回查消息</p></li>
+
+<li><p>开启新线程去回查</p></li>
+
+<li><p>主要是 <code>transactionListener#checkLocalTransaction</code> 本地事务检查</p></li>
+
+<li><p>发送 COMMIT_MESSAGE、ROLLBACK_MESSAGE、UNKNOW中的一个，然后向Broker发送END_TRANSACTION命令即可</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// TransactionalMessageCheckService 定时检查方法
+</span><span style="color:#6272a4"></span>@Override
+public void check(long transactionTimeout, int transactionCheckMax,
+    AbstractTransactionalMessageCheckListener listener) {
+    <span style="color:#ff79c6">try</span> {
+        String topic <span style="color:#ff79c6">=</span> MixAll.<span style="color:#50fa7b">RMQ_SYS_TRANS_HALF_TOPIC</span>;
+        Set&lt;MessageQueue&gt; msgQueues <span style="color:#ff79c6">=</span> transactionalMessageBridge.<span style="color:#50fa7b">fetchMessageQueues</span>(topic);
+        <span style="color:#ff79c6">if</span> (msgQueues <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">||</span> msgQueues.<span style="color:#50fa7b">size</span>() <span style="color:#ff79c6">==</span> 0) {
+            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;The queue of topic is empty :&#34;</span> <span style="color:#ff79c6">+</span> topic);
+            <span style="color:#ff79c6">return</span>;
+        }
+        log.<span style="color:#50fa7b">debug</span>(<span style="color:#f1fa8c">&#34;Check topic={}, queues={}&#34;</span>, topic, msgQueues);
+        <span style="color:#6272a4">// 遍历 Half 消息
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">for</span> (MessageQueue messageQueue <span style="color:#ff79c6">:</span> msgQueues) {
+            long startTime <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>();
+            MessageQueue opQueue <span style="color:#ff79c6">=</span> getOpQueue(messageQueue);
+            long halfOffset <span style="color:#ff79c6">=</span> transactionalMessageBridge.<span style="color:#50fa7b">fetchConsumeOffset</span>(messageQueue);
+            long opOffset <span style="color:#ff79c6">=</span> transactionalMessageBridge.<span style="color:#50fa7b">fetchConsumeOffset</span>(opQueue);
+            log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Before check, the queue={} msgOffset={} opOffset={}&#34;</span>, messageQueue, halfOffset, opOffset);
+            <span style="color:#ff79c6">if</span> (halfOffset <span style="color:#ff79c6">&lt;</span> 0 <span style="color:#ff79c6">||</span> opOffset <span style="color:#ff79c6">&lt;</span> 0) {
+                log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;MessageQueue: {} illegal offset read: {}, op offset: {},skip this queue&#34;</span>, messageQueue,
+                    halfOffset, opOffset);
+                <span style="color:#ff79c6">continue</span>;
+            }
+
+            List&lt;Long&gt; doneOpOffset <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ArrayList<span style="color:#ff79c6">&lt;&gt;</span>();
+            HashMap<span style="color:#ff79c6">&lt;</span>Long, Long&gt; removeMap <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> HashMap<span style="color:#ff79c6">&lt;&gt;</span>();
+            <span style="color:#6272a4">// 从RMQ_SYS_TRANS_OP_HALF_TOPIC主题中拉取32条，
+</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// 如果拉取的消息队列偏移量大于等于RMQ_SYS_TRANS_HALF_TOPIC#queueId当前的处理进度时，
+</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// 会添加到removeMap中，表示已处理过。
+</span><span style="color:#6272a4"></span>            PullResult pullResult <span style="color:#ff79c6">=</span> fillOpRemoveMap(removeMap, opQueue, opOffset, halfOffset, doneOpOffset);
+            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> pullResult) {
+                log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;The queue={} check msgOffset={} with opOffset={} failed, pullResult is null&#34;</span>,
+                    messageQueue, halfOffset, opOffset);
+                <span style="color:#ff79c6">continue</span>;
+            }
+            <span style="color:#6272a4">// single thread
+</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// 获取空消息的次数
+</span><span style="color:#6272a4"></span>            int getMessageNullCount <span style="color:#ff79c6">=</span> 1;
+            <span style="color:#6272a4">// 当前处理的最新偏移量
+</span><span style="color:#6272a4"></span>            long newOffset <span style="color:#ff79c6">=</span> halfOffset;
+            <span style="color:#6272a4">// 当前处理消息偏移量
+</span><span style="color:#6272a4"></span>            long i <span style="color:#ff79c6">=</span> halfOffset;
+            <span style="color:#ff79c6">while</span> (<span style="color:#ff79c6">true</span>) {
+                <span style="color:#6272a4">// 限制每次最多处理的时间
+</span><span style="color:#6272a4"></span>                <span style="color:#ff79c6">if</span> (System.<span style="color:#50fa7b">currentTimeMillis</span>() <span style="color:#ff79c6">-</span> startTime <span style="color:#ff79c6">&gt;</span> MAX_PROCESS_TIME_LIMIT) {
+                    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Queue={} process time reach max={}&#34;</span>, messageQueue, MAX_PROCESS_TIME_LIMIT);
+                    <span style="color:#ff79c6">break</span>;
+                }
+                <span style="color:#6272a4">// 如果removeMap中包含当前处理的消息，则继续下一条
+</span><span style="color:#6272a4"></span>                <span style="color:#ff79c6">if</span> (removeMap.<span style="color:#50fa7b">containsKey</span>(i)) {
+                    log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Half offset {} has been committed/rolled back&#34;</span>, i);
+                    removeMap.<span style="color:#50fa7b">remove</span>(i);
+                } <span style="color:#ff79c6">else</span> {
+                    GetResult getResult <span style="color:#ff79c6">=</span> getHalfMsg(messageQueue, i);
+                    MessageExt msgExt <span style="color:#ff79c6">=</span> getResult.<span style="color:#50fa7b">getMsg</span>();
+                    <span style="color:#ff79c6">if</span> (msgExt <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span>) {
+                        <span style="color:#6272a4">// 默认重试次数
+</span><span style="color:#6272a4"></span>                        <span style="color:#ff79c6">if</span> (getMessageNullCount<span style="color:#ff79c6">++</span> <span style="color:#ff79c6">&gt;</span> MAX_RETRY_COUNT_WHEN_HALF_NULL) {
+                            <span style="color:#ff79c6">break</span>;
+                        }
+                        <span style="color:#6272a4">// 没新消息
+</span><span style="color:#6272a4"></span>                        <span style="color:#ff79c6">if</span> (getResult.<span style="color:#50fa7b">getPullResult</span>().<span style="color:#50fa7b">getPullStatus</span>() <span style="color:#ff79c6">==</span> PullStatus.<span style="color:#50fa7b">NO_NEW_MSG</span>) {
+                            log.<span style="color:#50fa7b">debug</span>(<span style="color:#f1fa8c">&#34;No new msg, the miss offset={} in={}, continue check={}, pull result={}&#34;</span>, i,
+                                messageQueue, getMessageNullCount, getResult.<span style="color:#50fa7b">getPullResult</span>());
+                            <span style="color:#ff79c6">break</span>;
+                        } <span style="color:#ff79c6">else</span> {
+                            log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Illegal offset, the miss offset={} in={}, continue check={}, pull result={}&#34;</span>,
+                                i, messageQueue, getMessageNullCount, getResult.<span style="color:#50fa7b">getPullResult</span>());
+                            i <span style="color:#ff79c6">=</span> getResult.<span style="color:#50fa7b">getPullResult</span>().<span style="color:#50fa7b">getNextBeginOffset</span>();
+                            newOffset <span style="color:#ff79c6">=</span> i;
+                            <span style="color:#6272a4">// 重置偏移量, 重新拉取
+</span><span style="color:#6272a4"></span>                            <span style="color:#ff79c6">continue</span>;
+                        }
+                    }
+                    <span style="color:#6272a4">// 判断是否丢弃, 跳过
+</span><span style="color:#6272a4"></span>                    <span style="color:#6272a4">// needDiscard 最大回查次数 TRANSACTION_CHECK_TIMES
+</span><span style="color:#6272a4"></span>                    <span style="color:#6272a4">// needSkip 事务超过文件过期时间 72h
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">if</span> (needDiscard(msgExt, transactionCheckMax) <span style="color:#ff79c6">||</span> needSkip(msgExt)) {
+                        listener.<span style="color:#50fa7b">resolveDiscardMsg</span>(msgExt);
+                        newOffset <span style="color:#ff79c6">=</span> i <span style="color:#ff79c6">+</span> 1;
+                        i<span style="color:#ff79c6">++</span>;
+                        <span style="color:#ff79c6">continue</span>;
+                    }
+                    <span style="color:#ff79c6">if</span> (msgExt.<span style="color:#50fa7b">getStoreTimestamp</span>() <span style="color:#ff79c6">&gt;=</span> startTime) {
+                        log.<span style="color:#50fa7b">debug</span>(<span style="color:#f1fa8c">&#34;Fresh stored. the miss offset={}, check it later, store={}&#34;</span>, i,
+                            <span style="color:#ff79c6">new</span> Date(msgExt.<span style="color:#50fa7b">getStoreTimestamp</span>()));
+                        <span style="color:#ff79c6">break</span>;
+                    }
+                    <span style="color:#6272a4">// 消息已经保存时间
+</span><span style="color:#6272a4"></span>                    long valueOfCurrentMinusBorn <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>() <span style="color:#ff79c6">-</span> msgExt.<span style="color:#50fa7b">getBornTimestamp</span>();
+                    <span style="color:#6272a4">// 立刻检查事务的时间
+</span><span style="color:#6272a4"></span>                    long checkImmunityTime <span style="color:#ff79c6">=</span> transactionTimeout;
+                    <span style="color:#6272a4">// transactionTimeout 事务消息的超时时间 (最短可回查时间)
+</span><span style="color:#6272a4"></span>                    <span style="color:#6272a4">// 该时间就是假设事务消息发送成功后，应用程序事务提交的时间，
+</span><span style="color:#6272a4"></span>                    <span style="color:#6272a4">// 在这段时间内，RocketMQ任务事务未提交，故不应该在这个时间段向应用程序发送回查请求。
+</span><span style="color:#6272a4"></span>                    String checkImmunityTimeStr <span style="color:#ff79c6">=</span> msgExt.<span style="color:#50fa7b">getUserProperty</span>(MessageConst.<span style="color:#50fa7b">PROPERTY_CHECK_IMMUNITY_TIME_IN_SECONDS</span>);
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">!=</span> checkImmunityTimeStr) {
+                        <span style="color:#6272a4">// 事务消息制定了事务消息过期时间
+</span><span style="color:#6272a4"></span>                        checkImmunityTime <span style="color:#ff79c6">=</span> getImmunityTime(checkImmunityTimeStr, transactionTimeout);
+                        <span style="color:#ff79c6">if</span> (valueOfCurrentMinusBorn <span style="color:#ff79c6">&lt;</span> checkImmunityTime) {
+                            <span style="color:#ff79c6">if</span> (checkPrepareQueueOffset(removeMap, doneOpOffset, msgExt)) {
+                                newOffset <span style="color:#ff79c6">=</span> i <span style="color:#ff79c6">+</span> 1;
+                                i<span style="color:#ff79c6">++</span>;
+                                <span style="color:#ff79c6">continue</span>;
+                            }
+                        }
+                    } <span style="color:#ff79c6">else</span> {
+                        <span style="color:#ff79c6">if</span> ((0 <span style="color:#ff79c6">&lt;=</span> valueOfCurrentMinusBorn) <span style="color:#ff79c6">&amp;&amp;</span> (valueOfCurrentMinusBorn <span style="color:#ff79c6">&lt;</span> checkImmunityTime)) {
+                            log.<span style="color:#50fa7b">debug</span>(<span style="color:#f1fa8c">&#34;New arrived, the miss offset={}, check it later checkImmunity={}, born={}&#34;</span>, i,
+                                checkImmunityTime, <span style="color:#ff79c6">new</span> Date(msgExt.<span style="color:#50fa7b">getBornTimestamp</span>()));
+                            <span style="color:#ff79c6">break</span>;
+                        }
+                    }
+                    List&lt;MessageExt&gt; opMsg <span style="color:#ff79c6">=</span> pullResult.<span style="color:#50fa7b">getMsgFoundList</span>();
+                    boolean isNeedCheck <span style="color:#ff79c6">=</span> (opMsg <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">&amp;&amp;</span> valueOfCurrentMinusBorn <span style="color:#ff79c6">&gt;</span> checkImmunityTime)
+                        <span style="color:#ff79c6">||</span> (opMsg <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">&amp;&amp;</span> (opMsg.<span style="color:#50fa7b">get</span>(opMsg.<span style="color:#50fa7b">size</span>() <span style="color:#ff79c6">-</span> 1).<span style="color:#50fa7b">getBornTimestamp</span>() <span style="color:#ff79c6">-</span> startTime <span style="color:#ff79c6">&gt;</span> transactionTimeout))
+                        <span style="color:#ff79c6">||</span> (valueOfCurrentMinusBorn <span style="color:#ff79c6">&lt;=</span> <span style="color:#ff79c6">-</span>1);
+
+                    <span style="color:#ff79c6">if</span> (isNeedCheck) {
+                        <span style="color:#6272a4">// 如果需要发送事务状态回查消息，则先将消息再次发送到RMQ_SYS_TRANS_HALF_TOPIC主题中，
+</span><span style="color:#6272a4"></span>                        <span style="color:#6272a4">// 发送成功则返回true，否则返回false
+</span><span style="color:#6272a4"></span>                        <span style="color:#6272a4">// 成功会将该消息的queueOffset、commitLogOffset设置为重新存入的偏移量
+</span><span style="color:#6272a4"></span>                        <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>putBackHalfMsgQueue(msgExt, i)) {
+                            <span style="color:#ff79c6">continue</span>;
+                        }
+                        <span style="color:#6272a4">// 需要回查半消息
+</span><span style="color:#6272a4"></span>                        <span style="color:#6272a4">// 回查消息是用另个一线程发送的
+</span><span style="color:#6272a4"></span>                        listener.<span style="color:#50fa7b">resolveHalfMsg</span>(msgExt);
+                    } <span style="color:#ff79c6">else</span> {
+                        pullResult <span style="color:#ff79c6">=</span> fillOpRemoveMap(removeMap, opQueue, pullResult.<span style="color:#50fa7b">getNextBeginOffset</span>(), halfOffset, doneOpOffset);
+                        log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;The miss offset:{} in messageQueue:{} need to get more opMsg, result is:{}&#34;</span>, i,
+                            messageQueue, pullResult);
+                        <span style="color:#ff79c6">continue</span>;
+                    }
+                }
+                newOffset <span style="color:#ff79c6">=</span> i <span style="color:#ff79c6">+</span> 1;
+                i<span style="color:#ff79c6">++</span>;
+            }
+            <span style="color:#ff79c6">if</span> (newOffset <span style="color:#ff79c6">!=</span> halfOffset) {
+                <span style="color:#6272a4">// 保存(Prepare)消息队列的回查进度。
+</span><span style="color:#6272a4"></span>                transactionalMessageBridge.<span style="color:#50fa7b">updateConsumeOffset</span>(messageQueue, newOffset);
+            }
+            long newOpOffset <span style="color:#ff79c6">=</span> calculateOpOffset(doneOpOffset, opOffset);
+            <span style="color:#ff79c6">if</span> (newOpOffset <span style="color:#ff79c6">!=</span> opOffset) {
+                <span style="color:#6272a4">// 保存处理队列（op）的进度。
+</span><span style="color:#6272a4"></span>                transactionalMessageBridge.<span style="color:#50fa7b">updateConsumeOffset</span>(opQueue, newOpOffset);
+            }
+        }
+    } <span style="color:#ff79c6">catch</span> (Exception e) {
+        e.<span style="color:#50fa7b">printStackTrace</span>();
+        log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;Check error&#34;</span>, e);
+    }
+
+}</code></pre></div></li>
+</ol>
+
+<p>client 回查事务消息</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">    <span style="color:#6272a4">// 事务消息回查
+</span><span style="color:#6272a4"></span>    @Override
+    public void checkTransactionState(final String addr, final MessageExt msg,
+        final CheckTransactionStateRequestHeader header) {
+        <span style="color:#6272a4">// 开新线程检查
+</span><span style="color:#6272a4"></span>        Runnable request <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Runnable() {
+            private final String brokerAddr <span style="color:#ff79c6">=</span> addr;
+            private final MessageExt message <span style="color:#ff79c6">=</span> msg;
+            private final CheckTransactionStateRequestHeader checkRequestHeader <span style="color:#ff79c6">=</span> header;
+            private final String group <span style="color:#ff79c6">=</span> DefaultMQProducerImpl.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQProducer</span>.<span style="color:#50fa7b">getProducerGroup</span>();
+
+            @Override
+            public void run() {
+                TransactionCheckListener transactionCheckListener <span style="color:#ff79c6">=</span> DefaultMQProducerImpl.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">checkListener</span>();
+                TransactionListener transactionListener <span style="color:#ff79c6">=</span> getCheckListener();
+                <span style="color:#ff79c6">if</span> (transactionCheckListener <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">||</span> transactionListener <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                    LocalTransactionState localTransactionState <span style="color:#ff79c6">=</span> LocalTransactionState.<span style="color:#50fa7b">UNKNOW</span>;
+                    Throwable exception <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+                    <span style="color:#ff79c6">try</span> {
+                        <span style="color:#ff79c6">if</span> (transactionCheckListener <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                            <span style="color:#6272a4">// 本地事务检查
+</span><span style="color:#6272a4"></span>                            localTransactionState <span style="color:#ff79c6">=</span> transactionCheckListener.<span style="color:#50fa7b">checkLocalTransactionState</span>(message);
+                        } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (transactionListener <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                            log.<span style="color:#50fa7b">debug</span>(<span style="color:#f1fa8c">&#34;Used new check API in transaction message&#34;</span>);
+                            <span style="color:#6272a4">// 本地事务检查
+</span><span style="color:#6272a4"></span>                            localTransactionState <span style="color:#ff79c6">=</span> transactionListener.<span style="color:#50fa7b">checkLocalTransaction</span>(message);
+                        } <span style="color:#ff79c6">else</span> {
+                            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;CheckTransactionState, pick transactionListener by group[{}] failed&#34;</span>, group);
+                        }
+                    } <span style="color:#ff79c6">catch</span> (Throwable e) {
+                        log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;Broker call checkTransactionState, but checkLocalTransactionState exception&#34;</span>, e);
+                        exception <span style="color:#ff79c6">=</span> e;
+                    }
+                    <span style="color:#6272a4">// 发送 COMMIT_MESSAGE、ROLLBACK_MESSAGE、UNKNOW中的一个，然后向Broker发送END_TRANSACTION命令即可
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processTransactionState</span>(
+                        localTransactionState,
+                        group,
+                        exception);
+                } <span style="color:#ff79c6">else</span> {
+                    log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;CheckTransactionState, pick transactionCheckListener by group[{}] failed&#34;</span>, group);
+                }
+            }
+
+            private void processTransactionState(
+                final LocalTransactionState localTransactionState,
+                final String producerGroup,
+                final Throwable exception) {
+                final EndTransactionRequestHeader thisHeader <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> EndTransactionRequestHeader();
+                thisHeader.<span style="color:#50fa7b">setCommitLogOffset</span>(checkRequestHeader.<span style="color:#50fa7b">getCommitLogOffset</span>());
+                thisHeader.<span style="color:#50fa7b">setProducerGroup</span>(producerGroup);
+                thisHeader.<span style="color:#50fa7b">setTranStateTableOffset</span>(checkRequestHeader.<span style="color:#50fa7b">getTranStateTableOffset</span>());
+                thisHeader.<span style="color:#50fa7b">setFromTransactionCheck</span>(<span style="color:#ff79c6">true</span>);
+
+                String uniqueKey <span style="color:#ff79c6">=</span> message.<span style="color:#50fa7b">getProperties</span>().<span style="color:#50fa7b">get</span>(MessageConst.<span style="color:#50fa7b">PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX</span>);
+                <span style="color:#ff79c6">if</span> (uniqueKey <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span>) {
+                    uniqueKey <span style="color:#ff79c6">=</span> message.<span style="color:#50fa7b">getMsgId</span>();
+                }
+                thisHeader.<span style="color:#50fa7b">setMsgId</span>(uniqueKey);
+                thisHeader.<span style="color:#50fa7b">setTransactionId</span>(checkRequestHeader.<span style="color:#50fa7b">getTransactionId</span>());
+                <span style="color:#ff79c6">switch</span> (localTransactionState) {
+                    <span style="color:#ff79c6">case</span> COMMIT_MESSAGE<span style="color:#ff79c6">:</span>
+                        thisHeader.<span style="color:#50fa7b">setCommitOrRollback</span>(MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_COMMIT_TYPE</span>);
+                        <span style="color:#ff79c6">break</span>;
+                    <span style="color:#ff79c6">case</span> ROLLBACK_MESSAGE<span style="color:#ff79c6">:</span>
+                        thisHeader.<span style="color:#50fa7b">setCommitOrRollback</span>(MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_ROLLBACK_TYPE</span>);
+                        log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;when broker check, client rollback this transaction, {}&#34;</span>, thisHeader);
+                        <span style="color:#ff79c6">break</span>;
+                    <span style="color:#ff79c6">case</span> UNKNOW<span style="color:#ff79c6">:</span>
+                        thisHeader.<span style="color:#50fa7b">setCommitOrRollback</span>(MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_NOT_TYPE</span>);
+                        log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;when broker check, client does not know this transaction state, {}&#34;</span>, thisHeader);
+                        <span style="color:#ff79c6">break</span>;
+                    <span style="color:#ff79c6">default</span><span style="color:#ff79c6">:</span>
+                        <span style="color:#ff79c6">break</span>;
+                }
+
+                String remark <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+                <span style="color:#ff79c6">if</span> (exception <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                    remark <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;checkLocalTransactionState Exception: &#34;</span> <span style="color:#ff79c6">+</span> RemotingHelper.<span style="color:#50fa7b">exceptionSimpleDesc</span>(exception);
+                }
+
+                <span style="color:#ff79c6">try</span> {
+                    DefaultMQProducerImpl.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">mQClientFactory</span>.<span style="color:#50fa7b">getMQClientAPIImpl</span>().<span style="color:#50fa7b">endTransactionOneway</span>(brokerAddr, thisHeader, remark,
+                        3000);
+                } <span style="color:#ff79c6">catch</span> (Exception e) {
+                    log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;endTransactionOneway exception&#34;</span>, e);
+                }
+            }
+        };
+
+        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">checkExecutor</span>.<span style="color:#50fa7b">submit</span>(request);
+    }</code></pre></div>
+<h2 id="总结">总结</h2>
+
+
+<script src="https://unpkg.com/mermaid@8.2.3/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({ 
+       theme: 'dark',
+       themeCSS: '',
+       cloneCssStyles: false,
+       useMaxWidth: true,
+       htmlLabels: false,
+       flowchart: { 
+              curve: 'basis' 
+       }		
+   });
+</script> 
+<div class="mermaid" align="left" >
+sequenceDiagram
+
+producer->broker: sendMessageInTransaction()
+broker->broker: backup RealTopic,RealQueueId to property\n setTopic(RMQ_SYS_TRANS_HALF_TOPIC)
+broker->producer: SEND_OK
+producer->producer: executeLocalTransaction()
+broker-->>broker: TransactionalMessageCheckService\n check RMQ_SYS_TRANS_HALF_TOPIC & RMQ_SYS_TRANS_OP_HALF_TOPIC \n if isNeedCheck: resolveHalfMsg
+broker-->>producer: sendCheckMessage
+producer-->>producer: checkLocalTransaction\n COMMIT_MESSAGE\n ROLLBACK_MESSAGE\n UNKNOW
+producer-->>broker: endTransactionOneway()
+broker-->>broker: endTransaction()
+producer->broker: endTransaction()
+broker->broker: if commit: restore RealTopic,RealQueueId\n store RMQ_SYS_TRANS_OP_HALF_TOPIC\n if rollback: store RMQ_SYS_TRANS_OP_HALF_TOPIC
+
+</div>
+
+<!-- ![RocketMQ-transaction](/upload/2019/1908-rocketmq.png) -->
+
+<h2 id="问题">问题</h2>
+
+<ol>
+<li>事务消息提交后, 消费失败怎么处理?
+<br /></li>
+</ol>
+
+<blockquote>
+<p>业务方自己处理, RocketMQ没法处理</p>
+</blockquote>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

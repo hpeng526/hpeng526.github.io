@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>collection on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/collection/</link>
+    <description>Recent content in collection on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 26 May 2016 19:55:57 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/collection/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>MyBatis 对象映射 （一）</title>
+      <link>https://hpeng526.github.io/posts/16/1605mybatis-%E5%AF%B9%E8%B1%A1%E6%98%A0%E5%B0%84-%E4%B8%80/</link>
+      <pubDate>Thu, 26 May 2016 19:55:57 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/16/1605mybatis-%E5%AF%B9%E8%B1%A1%E6%98%A0%E5%B0%84-%E4%B8%80/</guid>
+      <description>Note: 尽量少用关联嵌套查询，因为关联嵌套查询会导致 N+1 查询问题，也就是说 如果你执行了一条SQL语句来获取结果列表(1) 对于返回的每一个查询语句，都</description>
+    </item>
+    
+  </channel>
+</rss>

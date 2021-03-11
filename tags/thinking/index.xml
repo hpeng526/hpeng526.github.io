@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>thinking on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/thinking/</link>
+    <description>Recent content in thinking on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 02 Nov 2016 21:34:56 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/thinking/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>对编程的思考</title>
+      <link>https://hpeng526.github.io/posts/16/1611%E5%AF%B9%E7%BC%96%E7%A8%8B%E7%9A%84%E6%80%9D%E8%80%83/</link>
+      <pubDate>Wed, 02 Nov 2016 21:34:56 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/16/1611%E5%AF%B9%E7%BC%96%E7%A8%8B%E7%9A%84%E6%80%9D%E8%80%83/</guid>
+      <description>最近，新项目都上 Gitlab 了，对同事提交的代码进行 merge 到 master 的时候，发现不合我的规范，因此进行了一些讨论，引发了一些思考。 起因 项目是一个接入项目，我封装</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>spring on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/spring/</link>
+    <description>Recent content in spring on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 25 Jul 2017 23:13:51 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/spring/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>mbean信息采集系统</title>
+      <link>https://hpeng526.github.io/posts/17/1707mbean%E4%BF%A1%E6%81%AF%E9%87%87%E9%9B%86%E7%B3%BB%E7%BB%9F/</link>
+      <pubDate>Tue, 25 Jul 2017 23:13:51 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/17/1707mbean%E4%BF%A1%E6%81%AF%E9%87%87%E9%9B%86%E7%B3%BB%E7%BB%9F/</guid>
+      <description>mbean 信息采集系统 spring boot Actuator 这个不多讲，主要是利用 metrics 采集时间序列（time-series）数据，他也可以在 spring mvc 上使用，所以很容易在我们现有的系统上集</description>
+    </item>
+    
+  </channel>
+</rss>

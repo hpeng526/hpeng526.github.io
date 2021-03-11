@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>RocketMQ // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="RocketMQ"/>
+<meta name="twitter:description" content="自建 RocketMQ RocketMQ 阿里开源的一款高性能、高吞吐量的消息中间件. 现在为Apache 孵化器项目 支持消息类型 有序 普通无序(现在我们的订阅模式都是无序模式) 负"/>
+
+    <meta property="og:title" content="RocketMQ" />
+<meta property="og:description" content="自建 RocketMQ RocketMQ 阿里开源的一款高性能、高吞吐量的消息中间件. 现在为Apache 孵化器项目 支持消息类型 有序 普通无序(现在我们的订阅模式都是无序模式) 负" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/17/1706rocketmq/" />
+<meta property="article:published_time" content="2017-06-02T23:30:24+00:00" />
+<meta property="article:modified_time" content="2017-06-02T23:30:24+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">RocketMQ</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Jun 2, 2017
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          6 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/rocketmq/">RocketMQ</a><a class="tag" href="https://hpeng526.github.io/tags/java/">Java</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="自建-rocketmq">自建 RocketMQ</h1>
+
+<h2 id="rocketmq">RocketMQ</h2>
+
+<p>阿里开源的一款高性能、高吞吐量的消息中间件. 现在为Apache 孵化器项目</p>
+
+<h2 id="支持消息类型">支持消息类型</h2>
+
+<ul>
+<li>有序</li>
+<li>普通无序(现在我们的订阅模式都是无序模式)</li>
+</ul>
+
+<!-- more -->
+
+<h2 id="负载均衡">负载均衡</h2>
+
+<ul>
+<li>producer 轮询的方式进行负载均衡</li>
+
+<li><p>consumer</p>
+
+<ul>
+<li>遍历Consumer下的所有topic，然后根据topic订阅所有的消息</li>
+<li>获取同一topic和Consumer Group下的所有Consumer</li>
+
+<li><p>然后根据具体的分配策略来分配消费队列，分配的策略包含：平均分配、消费端配置等</p>
+
+<pre><code>                                 +consumer A
+            Topic A              |
+                                 |
+        +------------&gt;  &lt;--------+
+        |                        |
+        |   broker               |
+        |                        |
+producer   ------------------&gt;  &lt;--------+
+        |
+        |   broker
+        |
+        +------------&gt;  &lt;---------+
+                                  +consumer B
+            broker
+</code></pre></li>
+</ul></li>
+</ul>
+
+<h2 id="物理部署结构">物理部署结构</h2>
+
+<pre><code>               +----------------------+
+               |                      |
+               |     namesrv cluster  |
++-------------^+                      &lt;------------+
+|              +------+-----+---------+            |
+|                     ^     ^                      |
+|                     |     |                      |
+|                     |     |                      |
+|                     |     |                      |
+|                     |     |                      |
+|      +--------+     |     |      +-------+       |
+|      |        +-----+     |      |       |       |
+|      |        |           +------+       |       |
+|      | master |                  | slave |       |
+|      |        +------------------+       |       |
+|      |   A    |                  |  A    |       |
+|      |        |                  |       |       |
+|      |        |                  |       |       |
+|      +--------+                  +-------+       |
+|                                                  |
+|                                                  |
+|                                                  |
+|                                                  |
+|      +--------+                  +-------+       |
+|      |        |                  |       |       |
++------+        |                  |       +-------+
+       | master |                  | slave |
+       |        +------------------+       |
+       |   B    |                  |   B   |
+       |        |                  |       |
+       |        |                  |       |
+       |        |                  |       |
+       +--------+                  +-------+
+</code></pre>
+
+<h3 id="部署遇到的问题">部署遇到的问题</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-code" data-lang="code">physic disk maybe full soon, so reclaim space, 0.9200628672685716
+disk space will be full soon, but delete file failed.</code></pre></div>
+<p>看源码</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">class CleanCommitLogService {
+
+        private final static int MAX_MANUAL_DELETE_FILE_TIMES <span style="color:#ff79c6">=</span> 20;
+        private final double diskSpaceWarningLevelRatio <span style="color:#ff79c6">=</span>
+            Double.<span style="color:#50fa7b">parseDouble</span>(System.<span style="color:#50fa7b">getProperty</span>(<span style="color:#f1fa8c">&#34;rocketmq.broker.diskSpaceWarningLevelRatio&#34;</span>, <span style="color:#f1fa8c">&#34;0.90&#34;</span>));
+
+        private final double diskSpaceCleanForciblyRatio <span style="color:#ff79c6">=</span>
+            Double.<span style="color:#50fa7b">parseDouble</span>(System.<span style="color:#50fa7b">getProperty</span>(<span style="color:#f1fa8c">&#34;rocketmq.broker.diskSpaceCleanForciblyRatio&#34;</span>, <span style="color:#f1fa8c">&#34;0.85&#34;</span>));
+        private long lastRedeleteTimestamp <span style="color:#ff79c6">=</span> 0;
+        <span style="color:#6272a4">/* ignore */</span>
+}</code></pre></div>
+<p>这是因为, RocketMQ 的磁盘空间检测是根据比例来计算的, 所以, 剩余磁盘比例要求, 需要可用空间大于10%</p>
+
+<h3 id="跳过阿里的验证-clientrpchook-onsclient">跳过阿里的验证 ClientRPCHook (ONSClient)</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">@Override
+    public void doBeforeRequest(String remoteAddr, RemotingCommand request) {
+        CommandCustomHeader header <span style="color:#ff79c6">=</span> request.<span style="color:#50fa7b">readCustomHeader</span>();
+        <span style="color:#6272a4">// sort property
+</span><span style="color:#6272a4"></span>        SortedMap<span style="color:#ff79c6">&lt;</span>String, String&gt; map <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> TreeMap<span style="color:#ff79c6">&lt;</span>String, String<span style="color:#ff79c6">&gt;</span>();
+        map.<span style="color:#50fa7b">put</span>(SessionCredentials.<span style="color:#50fa7b">AccessKey</span>, sessionCredentials.<span style="color:#50fa7b">getAccessKey</span>());
+        map.<span style="color:#50fa7b">put</span>(SessionCredentials.<span style="color:#50fa7b">ONSChannelKey</span>, sessionCredentials.<span style="color:#50fa7b">getOnsChannel</span>().<span style="color:#50fa7b">toString</span>());
+        <span style="color:#ff79c6">try</span> {
+            <span style="color:#6272a4">// add header properties
+</span><span style="color:#6272a4"></span>            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">!=</span> header) {
+                Field[] fields <span style="color:#ff79c6">=</span> fieldCache.<span style="color:#50fa7b">get</span>(header.<span style="color:#50fa7b">getClass</span>());
+                <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> fields) {
+                    fields <span style="color:#ff79c6">=</span> header.<span style="color:#50fa7b">getClass</span>().<span style="color:#50fa7b">getDeclaredFields</span>();
+                    <span style="color:#ff79c6">for</span> (Field field <span style="color:#ff79c6">:</span> fields) {
+                        field.<span style="color:#50fa7b">setAccessible</span>(<span style="color:#ff79c6">true</span>);
+                    }
+                    Field[] tmp <span style="color:#ff79c6">=</span> fieldCache.<span style="color:#50fa7b">putIfAbsent</span>(header.<span style="color:#50fa7b">getClass</span>(), fields);
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">!=</span> tmp) {
+                        fields <span style="color:#ff79c6">=</span> tmp;
+                    }
+                }
+
+                <span style="color:#ff79c6">for</span> (Field field <span style="color:#ff79c6">:</span> fields) {
+                    Object value <span style="color:#ff79c6">=</span> field.<span style="color:#50fa7b">get</span>(header);
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">!=</span> value) {
+                        map.<span style="color:#50fa7b">put</span>(field.<span style="color:#50fa7b">getName</span>(), value.<span style="color:#50fa7b">toString</span>());
+                    }
+                }
+            }
+            byte[] total <span style="color:#ff79c6">=</span> AuthUtil.<span style="color:#50fa7b">combineRequestContent</span>(request, map);
+            String signature <span style="color:#ff79c6">=</span> AuthUtil.<span style="color:#50fa7b">calSignature</span>(total, sessionCredentials.<span style="color:#50fa7b">getSecretKey</span>());
+            request.<span style="color:#50fa7b">addExtField</span>(SessionCredentials.<span style="color:#50fa7b">Signature</span>, signature);
+            request.<span style="color:#50fa7b">addExtField</span>(SessionCredentials.<span style="color:#50fa7b">AccessKey</span>, sessionCredentials.<span style="color:#50fa7b">getAccessKey</span>());
+            request.<span style="color:#50fa7b">addExtField</span>(SessionCredentials.<span style="color:#50fa7b">ONSChannelKey</span>, sessionCredentials.<span style="color:#50fa7b">getOnsChannel</span>().<span style="color:#50fa7b">toString</span>());
+        }
+        <span style="color:#ff79c6">catch</span> (Exception e) {
+            <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> RuntimeException(<span style="color:#f1fa8c">&#34;incompatible exception.&#34;</span>, e);
+        }
+    }</code></pre></div>
+<p>ONS的SDK里的实现是他重新实现自己的生产者与消费者, 增加ONS的RPCHook, 在每次的请求加上ONS的校验信息, 我们自搭建的不进行这些校验, 所以, 请求都会通过.</p>
+
+<h3 id="broker-参数">broker 参数</h3>
+
+<h4 id="使用broker配置模板">使用broker配置模板</h4>
+
+<p>导出配置文件</p>
+
+<pre><code>sh mqbroker -m &gt; anyfile
+</code></pre>
+
+<pre><code>namesrvAddr=192.168.1.50:9876
+brokerIP1=192.168.1.50
+brokerName=localhost.localdomain
+brokerClusterName=DefaultCluster
+brokerId=0
+autoCreateTopicEnable=true
+autoCreateSubscriptionGroup=true
+rejectTransactionMessage=false
+fetchNamesrvAddrByAddressServer=false
+storePathRootDir=/root/store
+storePathCommitLog=/root/store/commitlog
+flushIntervalCommitLog=1000
+flushCommitLogTimed=false
+deleteWhen=04
+fileReservedTime=72
+maxTransferBytesOnMessageInMemory=262144
+maxTransferCountOnMessageInMemory=32
+maxTransferBytesOnMessageInDisk=65536
+maxTransferCountOnMessageInDisk=8
+accessMessageInMemoryMaxRatio=40
+messageIndexEnable=true
+messageIndexSafe=false
+haMasterAddress=
+brokerRole=ASYNC_MASTER
+flushDiskType=ASYNC_FLUSH
+cleanFileForciblyEnable=true
+</code></pre>
+
+<p>字段|默认|说明
+&mdash;|&ndash;|&ndash;
+brokerRole | ASYNC_MASTER | Broker 的角色 - ASYNC_MASTER 异步复制 Master - SYNC_MASTER 同步双写 Master - SLAVE
+flushDiskType | ASYNC_FLUSH | 刷盘方式 - ASYNC_FLUSH 异步刷盘 - SYNC_FLUSH 同步刷盘 <b>ASYNC_FLUSH is recommended, for SYNC_FLUSH is expensive and will cause too much performance loss. If you want reliability, we recommend you use SYNC_MASTER with SLAVE.
+cleanFileForciblyEnable | TRUE | 磁盘满、且无过期文件情况下 TRUE 表示强制删除文件，优 先保证服务可用 FALSE 标记服务不可用，文件 不删除</p>
+
+<h3 id="官方推荐broker集群搭建方式-这里的-slave-不可写-但可读-类似于-mysql-主备方式">官方推荐broker集群搭建方式(这里的 Slave 不可写，但可读，类似于 Mysql 主备方式)</h3>
+
+<ol>
+<li><p><s>单master
+&gt; 这种方式风险较大，一旦 Broker 重启或者宕机时，会导致整个服务不可用，不建议线上环境使用</p></li>
+
+<li><p><s>多master
+&gt; 一个集群无 Slave，全是 Master，例如 2 个 Master 或者 3 个 Master
+&gt; 优点：配置简单，单个 Master 宕机或重启维护对应用无影响，在磁盘配置为 RAID10 时，即使机器宕机不可恢复情况下，由于 RAID10 磁盘非常可靠，消息也不会丢（异步刷盘丢失少量消息，同步刷盘一条不丢）。性能最高。
+&gt; 缺点：单台机器宕机期间，这台机器上未被消费的消息在机器恢复之前不可订阅，消息实时性会受到受到影响。</p></li>
+
+<li><p>多 Master 多 Slave 模式，异步复制
+&gt; 每个 Master 配置一个 Slave，有多对 Master-Slave，HA 采用异步复制方式，主备有短暂消息延迟，毫秒级。
+&gt; 优点：即使磁盘损坏，消息丢失的非常少，且消息实时性不会受影响，因为 Master 宕机后，消费者仍然可以从 Slave 消费，此过程对应用透明。不需要人工干预。性能同多 Master 模式几乎一样。
+&gt; 缺点：Master 宕机，磁盘损坏情况，会丢失少量消息。</p></li>
+
+<li><p>多 Master 多 Slave 模式，同步双写
+&gt; 每个 Master 配置一个 Slave，有多对 Master-Slave，HA 采用同步双写方式，主备都写成功，向应用返回成功。
+&gt; 优点：数据与服务都无单点，Master 宕机情况下，消息无延迟，服务可用性与数据可用性都非常高
+&gt; 缺点：性能比异步复制模式略低，大约低 10%左右，发送单个消息的 RT 会略高。</p></li>
+</ol>
+
+<p>以上 Broker 与 Slave 配对是通过指定相同的 brokerName 参数来配对，Master 的 BrokerId 必须是 0，Slave 的 BrokerId 必须是大于 0 的数。另外一个 Master 下面可以挂载多个 Slave，同一 Master 下的多个 Slave 通过指定不同的 BrokerId 来区分。</p>
+
+<h3 id="同步与异步刷盘的区别">同步与异步刷盘的区别</h3>
+
+<ul>
+<li>写入PAGECACHE后立即返回(后台线程刷盘)</li>
+<li>写入PAGECACHE后等待刷盘线程刷盘成功后返回</li>
+</ul>
+
+<h3 id="配置">配置</h3>
+
+<p>2m-2s-async</p>
+
+<pre><code>brokerClusterName=DefaultCluster
+brokerName=broker-a
+brokerId=0 # 0 master 1 slave
+deleteWhen=04
+fileReservedTime=48
+brokerRole=ASYNC_MASTER # SLAVE
+flushDiskType=ASYNC_FLUSH
+
+-------
+brokerClusterName=DefaultCluster
+brokerName=broker-b
+brokerId=0 # 0 master 1 slave
+deleteWhen=04
+fileReservedTime=48
+brokerRole=ASYNC_MASTER # SLAVE
+flushDiskType=ASYNC_FLUSH
+
+</code></pre>
+
+<h3 id="namesrv-配置">namesrv 配置</h3>
+
+<p>Wiki上是这么说的
+&gt;On default, the end point is:
+<a href="http://jmenv.tbsite.net:8080/rocketmq/nsaddr">http://jmenv.tbsite.net:8080/rocketmq/nsaddr</a>
+You may override jmenv.tbsite.net by this java option: rocketmq.namesrv.domain, You may also override nsaddr part by this java option: rocketmq.namesrv.domain.subgroup</p>
+
+<p>然后我们看源码</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class MixAll {
+    public static final String ROCKETMQ_HOME_ENV <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;ROCKETMQ_HOME&#34;</span>;
+    public static final String ROCKETMQ_HOME_PROPERTY <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;rocketmq.home.dir&#34;</span>;
+    public static final String NAMESRV_ADDR_ENV <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;NAMESRV_ADDR&#34;</span>;
+    public static final String NAMESRV_ADDR_PROPERTY <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;rocketmq.namesrv.addr&#34;</span>;
+    public static final String MESSAGE_COMPRESS_LEVEL <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;rocketmq.message.compressLevel&#34;</span>;
+    public static final String DEFAULT_NAMESRV_ADDR_LOOKUP <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;jmenv.tbsite.net&#34;</span>;
+    public static final String WS_DOMAIN_NAME <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">getProperty</span>(<span style="color:#f1fa8c">&#34;rocketmq.namesrv.domain&#34;</span>, DEFAULT_NAMESRV_ADDR_LOOKUP);
+    public static final String WS_DOMAIN_SUBGROUP <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">getProperty</span>(<span style="color:#f1fa8c">&#34;rocketmq.namesrv.domain.subgroup&#34;</span>, <span style="color:#f1fa8c">&#34;nsaddr&#34;</span>);
+    <span style="color:#6272a4">// http://jmenv.tbsite.net:8080/rocketmq/nsaddr
+</span><span style="color:#6272a4"></span>    public static final String WS_ADDR <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;http://&#34;</span> <span style="color:#ff79c6">+</span> WS_DOMAIN_NAME <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;:8080/rocketmq/&#34;</span> <span style="color:#ff79c6">+</span> WS_DOMAIN_SUBGROUP;
+}</code></pre></div>
+<p>只有WS_DOMAIN_NAME, WS_DOMAIN_SUBGROUP 是能配置的, 其他都是写死在代码. 如果生产上配置的话, 建议用http模式</p>
+
+<h4 id="优先级">优先级</h4>
+
+<pre><code>Programmatic Way &gt; Java Options &gt; Environment Variable &gt; HTTP Endpoint
+</code></pre>
+
+<h4 id="可用性">可用性</h4>
+
+<p>由于消息分布在各个broker上，一旦某个broker宕机，则该broker上的消息读写都会受到影响。所以rocketmq提供了master/slave的结构，salve定时从master同步数据，如果master宕机，则slave提供消费服务，但是不能写入消息，此过程对应用透明，由rocketmq内部解决。</p>
+
+<ul>
+<li>一旦某个broker master宕机，生产者和消费者多久才能发现？受限于rocketmq的网络连接机制，默认情况下，最多需要30秒，但这个时间可由应用设定参数来缩短时间。这个时间段内，发往该broker的消息都是失败的，而且该broker的消息无法消费，因为此时消费者不知道该broker已经挂掉。</li>
+<li>消费者得到master宕机通知后，转向slave消费，但是slave不能保证master的消息100%都同步过来了，因此会有少量的消息丢失。但是消息最终不会丢的，一旦master恢复，未同步过去的消息会被消费掉。</li>
+</ul>
+
+<h4 id="消息清理">消息清理</h4>
+
+<ul>
+<li>扫描间隔
+默认10秒，由broker配置参数cleanResourceInterval决定</li>
+<li>空间阈值
+物理文件不能无限制的一直存储在磁盘，当磁盘空间达到阈值时，不再接受消息，broker打印出日志，消息发送失败，阈值为固定值85%</li>
+<li>清理时机
+默认每天凌晨4点，由broker配置参数deleteWhen决定；或者磁盘空间达到阈值</li>
+<li>文件保留时长
+默认72小时，由broker配置参数fileReservedTime决定</li>
+</ul>
+
+<h4 id="系统特性">系统特性</h4>
+
+<ul>
+<li>大内存，内存越大性能越高，否则系统swap会成为性能瓶颈</li>
+<li>IO密集</li>
+<li>cpu load高，使用率低，因为cpu占用后，大部分时间在IO WAIT</li>
+<li>磁盘可靠性要求高，为了兼顾安全和性能，采用RAID10阵列</li>
+<li>磁盘读取速度要求快，要求高转速大容量磁盘</li>
+</ul>
+
+<h4 id="对比阿里消息队列">对比阿里消息队列</h4>
+
+<table>
+<thead>
+<tr>
+<th align="left">项目</th>
+<th align="center">阿里消息队列</th>
+<th align="center">自建RocketMQ</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td align="left">监控</td>
+<td align="center">自带监控,附有短信提醒</td>
+<td align="center">没有主动监控通知功能, 需要自己搭建</td>
+</tr>
+
+<tr>
+<td align="left">运维成本</td>
+<td align="center">跟阿里消息队列故障率有关</td>
+<td align="center">采用2m-2s-async部署,Master 宕机，磁盘损坏情况，会丢失少量消息</td>
+</tr>
+
+<tr>
+<td align="left">面板一览</td>
+<td align="center">发布,订阅,消息,查询</td>
+<td align="center">发布,订阅,消息,查询(开源的RocketMQ-console-ng)</td>
+</tr>
+
+<tr>
+<td align="left">节点区域</td>
+<td align="center">华北,华南,华东,新加坡,公网</td>
+<td align="center">自建想去哪就去哪</td>
+</tr>
+
+<tr>
+<td align="left">安全性</td>
+<td align="center">对公网访问需要走阿里定制化的验证</td>
+<td align="center">无, 建议不开放公网访问</td>
+</tr>
+
+<tr>
+<td align="left">费用</td>
+<td align="center">高</td>
+<td align="center">按四台ECS2-4(322x4)</td>
+</tr>
+
+<tr>
+<td align="left">费用解释</td>
+<td align="center">包括请求, 上下行流量, 堆积等 <a href="https://www.aliyun.com/price/product#/mns/detail">费用</a></td>
+<td align="center">只有ECS费用</td>
+</tr>
+</tbody>
+</table>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

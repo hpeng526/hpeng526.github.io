@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Docker on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/docker/</link>
+    <description>Recent content in Docker on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 25 Jul 2017 23:18:47 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Docker生态使用与编排</title>
+      <link>https://hpeng526.github.io/posts/17/1707docker%E7%94%9F%E6%80%81%E4%BD%BF%E7%94%A8%E4%B8%8E%E7%BC%96%E6%8E%92/</link>
+      <pubDate>Tue, 25 Jul 2017 23:18:47 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/17/1707docker%E7%94%9F%E6%80%81%E4%BD%BF%E7%94%A8%E4%B8%8E%E7%BC%96%E6%8E%92/</guid>
+      <description>Docker生态使用与编排 Docker 介绍 Docker 是一种容器技术，强依赖linux内核 容器（Container） 有时候也被称为操作系统级虚拟化，以区别传统的</description>
+    </item>
+    
+    <item>
+      <title>利用Docker写Hexo文章</title>
+      <link>https://hpeng526.github.io/posts/16/1611%E5%88%A9%E7%94%A8docker%E5%86%99hexo%E6%96%87%E7%AB%A0/</link>
+      <pubDate>Tue, 08 Nov 2016 21:36:48 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/16/1611%E5%88%A9%E7%94%A8docker%E5%86%99hexo%E6%96%87%E7%AB%A0/</guid>
+      <description>因为，每一次换环境都要重新弄 Hexo 的环境，才能愉快的写文（wu）章（liao）。于是乎，想到肯定有人把环境弄成 Docker 的，挂在目录就行了。这不，一搜就</description>
+    </item>
+    
+    <item>
+      <title>Docker 体验</title>
+      <link>https://hpeng526.github.io/posts/16/1605docker-%E4%BD%93%E9%AA%8C/</link>
+      <pubDate>Sun, 29 May 2016 20:18:38 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/16/1605docker-%E4%BD%93%E9%AA%8C/</guid>
+      <description>周末了，很早就想体验一下 Docker ，所以，就把很久以前用 Python + Flask 写的小项目用 Docker 部署一下。项目还用到了 Redis 所以，这次就简单的把所有东西揉在一个 Docker image 里好了。</description>
+    </item>
+    
+  </channel>
+</rss>

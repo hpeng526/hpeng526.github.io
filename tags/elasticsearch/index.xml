@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>ElasticSearch on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/elasticsearch/</link>
+    <description>Recent content in ElasticSearch on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 22 Jun 2017 23:21:22 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>ELK</title>
+      <link>https://hpeng526.github.io/posts/17/1706elk/</link>
+      <pubDate>Thu, 22 Jun 2017 23:21:22 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/17/1706elk/</guid>
+      <description>ELK 搭建与使用 (5.4) ELK 是什么? ElasticSearch + logstash + kibana 是一套开源的日志管理检索方案 我采用的采集流程 +-----------+ | | | filebeat1 +------+ | | | +-------+ +-------------+ +-----------------+ +----------+ +-----------+ | | | | | | | | | +--&amp;gt; | redis +--&amp;gt; | logstash +---&amp;gt; |</description>
+    </item>
+    
+  </channel>
+</rss>

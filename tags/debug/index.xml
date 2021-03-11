@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>debug on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/debug/</link>
+    <description>Recent content in debug on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 09 May 2018 23:10:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/debug/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>btrace 笔记</title>
+      <link>https://hpeng526.github.io/posts/18/1804btrace/</link>
+      <pubDate>Wed, 09 May 2018 23:10:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/18/1804btrace/</guid>
+      <description>Btrace - a safe, dynamic tracing tool for the Java platform Btrace 加载过程 client Javac 加载 Btrace Verifier 编译成字节码 通过 attach 方法动态 attach 到 JVM Attach API submit 提交 Btrace 编译后的字节码到对应 PID VM.(socket 通信) try { Client client = new Client(port, OUTPUT_FILE, PROBE_DESC_PATH, DEBUG, TRACK_RETRANSFORM,</description>
+    </item>
+    
+  </channel>
+</rss>

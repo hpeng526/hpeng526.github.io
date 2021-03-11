@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>Docker生态使用与编排 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Docker生态使用与编排"/>
+<meta name="twitter:description" content="Docker生态使用与编排 Docker 介绍 Docker 是一种容器技术，强依赖linux内核 容器（Container） 有时候也被称为操作系统级虚拟化，以区别传统的"/>
+
+    <meta property="og:title" content="Docker生态使用与编排" />
+<meta property="og:description" content="Docker生态使用与编排 Docker 介绍 Docker 是一种容器技术，强依赖linux内核 容器（Container） 有时候也被称为操作系统级虚拟化，以区别传统的" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/17/1707docker%E7%94%9F%E6%80%81%E4%BD%BF%E7%94%A8%E4%B8%8E%E7%BC%96%E6%8E%92/" />
+<meta property="article:published_time" content="2017-07-25T23:18:47+00:00" />
+<meta property="article:modified_time" content="2017-07-25T23:18:47+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Docker生态使用与编排</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Jul 25, 2017
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          8 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/docker/">Docker</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="docker生态使用与编排">Docker生态使用与编排</h1>
+
+<h2 id="docker-介绍">Docker 介绍</h2>
+
+<p>Docker 是一种容器技术，强依赖linux内核</p>
+
+<h3 id="容器-container">容器（Container）</h3>
+
+<p>有时候也被称为操作系统级虚拟化，以区别传统的Hypervisor虚拟技术。它不对硬件进行模拟，只是作为普通进程运行于宿主机的内核之上。</p>
+
+<p>容器运行的一般都是一个简单的Linux系统，有root用户权限，进程id，及网络等属性。</p>
+
+<!-- more -->
+
+<h2 id="container-vs-vm">Container vs. VM</h2>
+
+<h3 id="virtual-machine">Virtual Machine</h3>
+
+<pre><code>             +----------+
+             |  VM      |
+             |          |
++----------+ +----------+ +----------+
+|  App A   | |  App B   | |  App C   |
++----------+ +----------+ +----------+
++----------+ +----------+ +----------+
+| Bins/Libs| | Bins/Libs| | Bins/Libs|
++----------+ +----------+ +----------+
++----------+ +----------+ +----------+
+| Guest OS | | Guest OS | | Guest OS |
++----------+ +----------+ +----------+
++------------------------------------+
+|                                    |
+|          Hypervisor                |
+|                                    |
++------------------------------------+
++------------------------------------+
+|                                    |
+|          Infrastructure            |
+|                                    |
++------------------------------------+
+</code></pre>
+
+<h3 id="docker">Docker</h3>
+
+<pre><code>             +----------+
+             | Container|
+             |          |
++----------+ +----------+ +----------+
+|  App A   | |  App B   | |  App C   |
++----------+ +----------+ +----------+
++----------+ +----------+ +----------+
+| Bins/Libs| | Bins/Libs| | Bins/Libs|
++----------+ +----------+ +----------+
++------------------------------------+
+|             Docker                 |
++------------------------------------+
++------------------------------------+
+|                                    |
+|             Host OS                |
+|                                    |
++------------------------------------+
++------------------------------------+
+|                                    |
+|          Infrastructure            |
+|                                    |
++------------------------------------+
+</code></pre>
+
+<p>容器是共享单个内核，容器镜像中包含唯一的信息就是可执行文件以及包的依赖项，而这些依赖永远不需要安装在宿主上。这些进程跟本机进程一样运行，并且可以单独的管理他们。这就决定了Docker一个特性<code>runs anywhere</code>，因为没有了奇怪复杂的配置项目（依赖已经被容器携带了），一个容器化的程序可以很方便的运行在任何地方。</p>
+
+<h2 id="基本概念">基本概念</h2>
+
+<ul>
+<li>镜像（Image）</li>
+<li>容器（Container）</li>
+<li>仓库（Repository）</li>
+</ul>
+
+<h3 id="docker-image">Docker Image</h3>
+
+<p>Docker 镜像是一个特殊的文件系统，除了包含容器运行时所需的库，资源，配置等文件外，还包含了一些为运时准备的配置参数，镜像不包含任何动态数据，其内容在构建后也不会改变。</p>
+
+<p>一个重要的概念就是<b>分层存储</b>，Docker 充分利用 <a href="https://en.wikipedia.org/wiki/Union_mount">Union FS</a>技术，将其设计成分层存储的架构。</p>
+
+<p>镜像构建时，会一层层的构建，上一层是下一层的基础，没一层构建完就不会改变。这个特性就使得，镜像的定制与复用变得非常容易。</p>
+
+<p>通常 Union FS 有两个用途, 一方面可以实现不借助 LVM、RAID 将多个 disk 挂到同一个目录下,另一个更常用的就是将一个只读的分支和一个可写的分支联合在一起，Live CD 正是基于此方法可以允许在镜像不变的基础上允许用户在其上进行一些写操作。 Docker 在 AUFS 上构建的容器也是利用了类似的原理。(注：CentOS/RHEL 用户并没有UnionFS使用)</p>
+
+<h3 id="docker-container">Docker Container</h3>
+
+<p>可以这么理解，一个<code>Container</code>就是运行中的<code>Image</code>实例。容器可以被创建，启动，停止，删除，暂停等。</p>
+
+<p>容器运行时，是以镜像为基础，它会在创建一个当前容器的存储层，当容器消失，容器的存储也会消失（例如你把container删除了）。所以，任何在保存在容器里的内容都会由于容器的删除而丢失。</p>
+
+<p>因此，容器不应该写入需要保留的数据，所有文件的写入操作应该使用<code>Volume</code>，或者绑定宿主目录（但是，万事不是绝对的，京东就把MySQL数据库Docker化了 <a href="http://www.dockerinfo.net/4391.html">京东MySQL数据库Docker化最佳实践</a>）</p>
+
+<h3 id="docker-repository">Docker Repository</h3>
+
+<p>顾名思义，就是个放镜像的地方。Docker仓库负责存储，分发镜像服务。</p>
+
+<h2 id="为什么要用docker">为什么要用Docker</h2>
+
+<ul>
+<li>更高效利用系统资源</li>
+<li>更快启动时间（对比与虚拟化技术）</li>
+<li>一致的运行环境（这个就相当爽了，环境问题都不是问题）</li>
+<li>持续交付与部署</li>
+<li>更轻松的迁移（废话）</li>
+<li>更轻松的维护和扩展</li>
+</ul>
+
+<h2 id="从一个-dockerfile-入手">从一个 Dockerfile 入手</h2>
+
+<pre><code># 基础镜像
+FROM java:8
+
+# 环境变量 Rocketmq version
+ENV ROCKETMQ_VERSION 4.0.0-incubating
+
+# Rocketmq home
+ENV ROCKETMQ_HOME  /opt/rocketmq-${ROCKETMQ_VERSION}
+
+# working dir 指定工作目录，如果不存在，则创建该目录
+WORKDIR  ${ROCKETMQ_HOME}
+
+# Run 执行命令
+RUN mkdir -p \
+		/opt/logs \
+	    /opt/store \
+	/opt/conf
+
+RUN curl https://dist.apache.org/repos/dist/release/incubator/rocketmq/${ROCKETMQ_VERSION}/rocketmq-all-${ROCKETMQ_VERSION}-bin-release.zip -o rocketmq.zip \
+          &amp;&amp; unzip rocketmq.zip \
+          &amp;&amp; mv apache-rocketmq-all/* . \
+          &amp;&amp; rmdir apache-rocketmq-all  \
+          &amp;&amp; rm rocketmq.zip
+
+COPY runbroker.sh bin/runbroker.sh
+
+COPY broker* bin/
+
+RUN chmod +x bin/mqbroker
+
+CMD cd ${ROCKETMQ_HOME}/bin &amp;&amp; export JAVA_OPT=&quot; -Duser.home=/opt&quot;
+
+
+VOLUME /opt/logs \
+		/opt/store \
+			/opt/conf
+
+ENTRYPOINT [&quot;/opt/rocketmq-4.0.0-incubating/bin/mqbroker&quot;]
+</code></pre>
+
+<h2 id="docker-编排与调度">Docker 编排与调度</h2>
+
+<h3 id="为什么需要编排与调度">为什么需要编排与调度？</h3>
+
+<p>如果你应用也就那么一个节点，并不复杂。当然也就不需要编排与调度了。当应用被扩展到多主机，多节点，如果还是人工管理这些节点，这些集群，则会变得很无力与很蠢。</p>
+
+<h3 id="docker-swarm">Docker swarm</h3>
+
+<p>Docker的Swarm是一个2014年12月发布的调度器。它旨在提供一个健壮的调度器，采用Docker原生句法使得可以在宿主机上启动容器和进行供应。</p>
+
+<p>作为容器集群管理器，Swarm 最大的优势之一就是 100% 支持标准的 Docker API。各种基于标准 API 的工具比如 Compose 各种管理软件，甚至 Docker 本身等都可以很容易的与 Swarm 进行集成。</p>
+
+<h4 id="swarm-mode">swarm mode</h4>
+
+<p>在 docker 1.12 以上，Docker Engine 已经集成了 swarm mode，这个特性可以让 Docker Engine 更容易管理多host与多container（不需要额外的 etcd 或者 zk 或者 consul），当然传统模式还是用上较好，则只是一个可选的特性。</p>
+
+<p>官方也更推荐用分布式的kv做为发现服务
+- Consul 0.5.1+
+- Etcd 2.0+
+- ZooKeeper 3.4.5+</p>
+
+<p>这个特性安装与加入十分简单，他有一个swarm init命令</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker swarm init --advertise-addr <span style="color:#bd93f9">192</span>.168.77.131</code></pre></div>
+<p>他默认是监听<code>0.0.0.0:2377</code>作为通讯端口
+可以看一下</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@ubuntu:/home/hp# lsof -i TCP:2377
+COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+dockerd <span style="color:#bd93f9">1476</span> root   16u  IPv6  <span style="color:#bd93f9">20684</span>      0t0  TCP *:2377 <span style="color:#ff79c6">(</span>LISTEN<span style="color:#ff79c6">)</span>
+dockerd <span style="color:#bd93f9">1476</span> root   22u  IPv4  <span style="color:#bd93f9">20703</span>      0t0  TCP bogon:42632-&gt;bogon:2377 <span style="color:#ff79c6">(</span>ESTABLISHED<span style="color:#ff79c6">)</span>
+dockerd <span style="color:#bd93f9">1476</span> root   23u  IPv6  <span style="color:#bd93f9">20704</span>      0t0  TCP bogon:2377-&gt;bogon:42632 <span style="color:#ff79c6">(</span>ESTABLISHED<span style="color:#ff79c6">)</span>
+dockerd <span style="color:#bd93f9">1476</span> root   24u  IPv6  <span style="color:#bd93f9">20706</span>      0t0  TCP bogon:2377-&gt;bogon:48716 <span style="color:#ff79c6">(</span>ESTABLISHED<span style="color:#ff79c6">)</span>
+dockerd <span style="color:#bd93f9">1476</span> root   27u  IPv6  <span style="color:#bd93f9">22112</span>      0t0  TCP bogon:2377-&gt;bogon:34842 <span style="color:#ff79c6">(</span>ESTABLISHED<span style="color:#ff79c6">)</span></code></pre></div>
+<p>这样就创建了manager节点了。manager节点可以集群化的，后面再说</p>
+
+<p>node 节点的加入就更简单了</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker swarm join --token SWMTKN <span style="color:#bd93f9">192</span>.168.77.131:2377</code></pre></div>
+<p>这里的token是你的 worker token</p>
+
+<p>我们看一下命令</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@ubuntu:/home/hp# docker swarm join-token -q
+<span style="color:#f1fa8c">&#34;docker swarm join-token&#34;</span> requires exactly <span style="color:#bd93f9">1</span> argument<span style="color:#ff79c6">(</span>s<span style="color:#ff79c6">)</span>.
+See <span style="color:#f1fa8c">&#39;docker swarm join-token --help&#39;</span>.
+
+Usage:  docker swarm join-token <span style="color:#ff79c6">[</span>OPTIONS<span style="color:#ff79c6">]</span> <span style="color:#ff79c6">(</span>worker|manager<span style="color:#ff79c6">)</span>
+
+Manage join tokens</code></pre></div>
+<p>根据列出来的token类型，你加入集群的 Docker 节点的角色就决定了，非常简单。</p>
+
+<p>把节点都加上去了，这样一个简单的swarm集群就完成了</p>
+
+<p>我们看一下节点信息</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@ubuntu:/home/hp# docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+5z6isoxa3albvz3bs8oxrgavq     ubuntu              Ready               Active              
+guhnaiojhv8ipwqgglp62266h *   ubuntu              Ready               Active              Leader
+rgi3io84yji23r6oc7r130a4d     ubuntu              Ready               Active              </code></pre></div>
+<h4 id="swarm-web-ui-portainer">swarm web-ui （portainer）</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker service create <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>--name portainer <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>--publish <span style="color:#bd93f9">9000</span>:9000 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>--constraint <span style="color:#f1fa8c">&#39;node.role == manager&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>--mount <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>bind,src<span style="color:#ff79c6">=</span>//var/run/docker.sock,dst<span style="color:#ff79c6">=</span>/var/run/docker.sock <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>portainer/portainer <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>-H unix:///var/run/docker.sock</code></pre></div>
+<p>找了一个google排第一的 <a href="https://portainer.io/">portainer</a> ，页面是这样的</p>
+
+<p><img src="/upload/2017/swarm_portainer.jpg" alt="portainer-img" /></p>
+
+<p>则就很方便了可以在web上管理我们的集群了。基本的信息都有了。</p>
+
+<h4 id="swarm-负载均衡">swarm 负载均衡</h4>
+
+<p>swarm manager 使用 ingress load balancing 来暴露你想从外部访问的服务，外部组件可以访问集群中任意节点的端口来访问服务，无论改节点是否正在运行此服务，例如上面的 portainer ，你可以访问集群中任意ip:9000，就可以访问 portainer 服务了。为什么呢，因为他在启动的时候用了一个参数 publish，这就把服务发布在PublishedPort上。
+Swarm mode 有一个内部的 DNS 组件，为集群的每一个服务分配 DNS 条目，swarm manager使用内部的负载均衡，根据服务的DNS名称在集群内部服务分配请求。</p>
+
+<p><img src="/upload/2017/ingress-routing-mesh.png" alt="ingress-routing-mesh" /></p>
+
+<h4 id="swarm-网络">swarm 网络</h4>
+
+<p>swarm 中有三种重要的网络概念</p>
+
+<ul>
+<li><p>Overlay networks 管理swarm集群里面各 Docker daemon 之间的通信. 你可以创建 overlay 网络, 方法跟在独立容器中创建用户自定网络相同, 你也可以将服务添加到一个或者多个现有的覆盖玩过, 以实现服务间通信. Overlay networks 就是使用 overlay 网络驱动的 Docker networks.</p></li>
+
+<li><p>ingress network 是一个特殊的 Overlay network, 用于服务节点间的负载均衡. 当集群节点在已经发布的端口上接收到请求时, 他负责把请求以前给被调用模块的<code>IPVS</code>. <code>IPVS</code>跟踪参与该服务的所有ip地址, 并选择其中一个, 通过<code>ingress</code>路由请求.</p></li>
+
+<li><p>docker_gwbridge 是一个桥接网络用来连接 overlay networks 到单独的 Docker daemon 的物理网络中.</p></li>
+</ul>
+
+<blockquote>
+<p>IPVS
+IPVS（IP虚拟服务器）在 Linux 内核中执行传输层的负载均衡，因此被叫做 “Layer-4转换”。它是一个被整合进 Linux 内核的负载均衡模块，基于 Netfllter（网络过滤器）。它支持 TCP、SCTP 和 UDP、v4 和 v7。IPVS 在真正的服务器集群之前先在主机上工作，作为负载均衡器。它能把对服务（基于 TCP/UDP）的需求引导到真正的服务器上去，让真正服务器的服务以虚拟服务的方式呈现在单个 IP 地址上。</p>
+</blockquote>
+
+<h4 id="利用-swarm-进行编排">利用 swarm 进行编排</h4>
+
+<p>我们利用一个获取hostname的小程序来测试一下swarm的负载均衡</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
+
+<span style="color:#ff79c6">import</span> (
+	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
+	<span style="color:#f1fa8c">&#34;log&#34;</span>
+	<span style="color:#f1fa8c">&#34;net/http&#34;</span>
+	<span style="color:#f1fa8c">&#34;os&#34;</span>
+)
+
+<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">getHost</span>(w http.ResponseWriter, r <span style="color:#ff79c6">*</span>http.Request) {
+	host, err <span style="color:#ff79c6">:=</span> os.<span style="color:#50fa7b">Hostname</span>()
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		fmt.<span style="color:#50fa7b">Printf</span>(<span style="color:#f1fa8c">&#34;%s\n&#34;</span>, err)
+	} <span style="color:#ff79c6">else</span> {
+		fmt.<span style="color:#50fa7b">Printf</span>(<span style="color:#f1fa8c">&#34;%s\n&#34;</span>, host)
+	}
+	w.<span style="color:#50fa7b">Write</span>([]<span style="color:#8be9fd;font-style:italic">byte</span>(host))
+	<span style="color:#ff79c6">return</span>
+}
+
+<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+	http.<span style="color:#50fa7b">HandleFunc</span>(<span style="color:#f1fa8c">&#34;/&#34;</span>, getHost)
+	err <span style="color:#ff79c6">:=</span> http.<span style="color:#50fa7b">ListenAndServe</span>(<span style="color:#f1fa8c">&#34;0.0.0.0:8888&#34;</span>, <span style="color:#ff79c6">nil</span>)
+	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+		log.<span style="color:#50fa7b">Fatal</span>(<span style="color:#f1fa8c">&#34;ListenAndServe: &#34;</span>, err)
+	}
+}</code></pre></div>
+<p>这次省事, 直接用二进制文件了
+Dockerfile</p>
+
+<pre><code>FROM scratch
+ADD hostname /
+CMD [&quot;/hostname&quot;]
+</code></pre>
+
+<p>此处省略私有库搭建与上传和使用</p>
+
+<p>创建服务</p>
+
+<p><code>docker service create --replicas 3 --name hostname --publish 8888:8888 '192.168.52.128:5000/hostname'</code></p>
+
+<pre><code>root@ubuntu1:/home/hp# docker service ps hostname
+ID                  NAME                IMAGE                                 NODE                DESIRED STATE       CURRENT STATE            ERROR               PORTS
+uizw9zjf4qnw        hostname.1          192.168.52.128:5000/hostname:latest   ubuntu3             Running             Running 46 seconds ago                       
+q59cl3gl1x29        hostname.2          192.168.52.128:5000/hostname:latest   ubuntu2             Running             Running 47 seconds ago                       
+y615gsl4tz77        hostname.3          192.168.52.128:5000/hostname:latest   ubuntu1             Running             Running 47 seconds ago                       
+</code></pre>
+
+<p>可以看到, hostname 落在了三个节点上.</p>
+
+<p>我们访问8888端口</p>
+
+<pre><code>root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+191cdd3fc152
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+e1584585aa8c
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+b37513c9b9b0
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+191cdd3fc152
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+e1584585aa8c
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+b37513c9b9b0
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+191cdd3fc152
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+e1584585aa8c
+root@ubuntu1:/home/hp# curl 192.168.52.128:8888
+b37513c9b9b0
+</code></pre>
+
+<p>可以看到, 请求是分散在每个节点上的, 因为服务内分发请求到容器的默认方法是<code>顺序轮询</code></p>
+
+<p>如果此时, 有一台物理机故障了怎么办.我们简单粗暴的直接把Ubuntu3关机.</p>
+
+<pre><code>root@ubuntu1:/home/hp# docker service ps hostname
+ID                  NAME                IMAGE                                 NODE                DESIRED STATE       CURRENT STATE                    ERROR               PORTS
+ovbuip43u760        hostname.1          192.168.52.128:5000/hostname:latest   ubuntu2             Running             Running less than a second ago                       
+uizw9zjf4qnw         \_ hostname.1      192.168.52.128:5000/hostname:latest   ubuntu3             Shutdown            Running 20 seconds ago                               
+q59cl3gl1x29        hostname.2          192.168.52.128:5000/hostname:latest   ubuntu2             Running             Running 5 minutes ago                                
+y615gsl4tz77        hostname.3          192.168.52.128:5000/hostname:latest   ubuntu1             Running             Running 5 minutes ago                           
+</code></pre>
+
+<p>可以看到. swarm 帮我们把服务挂到了节点Ubuntu2上.这个过程都是全自动的.</p>
+
+<p>swarm 还支持 <a href="https://docs.docker.com/engine/swarm/swarm-tutorial/rolling-update/">滚动更新</a> . 这个特性就不在这里演示了. 滚动更新主要的流程就是:
+- 停止第一个任务
+- 对停止的任务进行更新
+- 启动 container (已经更新的任务)
+- 如果任务返回状态是<code>RUNNING</code>,则等待指定的时间(可以配置), 然后进行下一个更新任务
+- 如果在更新期间的任意时刻, 任务返回<code>FAILED</code>, 则停止更新.</p>
+
+<h3 id="实战-actuator-jolokia-telegraf-influxdb-grafana">实战 (actuator+jolokia+telegraf+influxdb+grafana)</h3>
+
+<p><a href="/2017/07/25/mbean信息采集系统/">简介</a></p>
+
+<h4 id="1-创建一个自定义-overlay-网络">1. 创建一个自定义 overlay 网络</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker network create -d overlay influx</code></pre></div>
+<p>创建 overlay 网络的一个目的就是, 这个采集系统不需要与其他 Container &ldquo;交流&rdquo;, 采集系统是可以完全独立的一个存在, 所以对他进行网络隔离会好一点.</p>
+
+<h4 id="2-启动-influxdb-服务">2. 启动 influxdb 服务</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker service create --replicas <span style="color:#bd93f9">1</span> --name influxdb --network influx --publish <span style="color:#bd93f9">8086</span>:8086 <span style="color:#f1fa8c">&#39;192.168.52.128:5000/influxdb&#39;</span></code></pre></div>
+<h4 id="3-启动-telegraf-采集">3. 启动 telegraf 采集</h4>
+
+<p>创建telegraf的配置文件, 因为 swarm 是集群模式, 如果用docker本身的挂载主机目录的方法, 则它就无法部署在其他节点上, 所以, 我们可以通过挂载配置文件的方式进行这类应用的部署.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker config create telegraf telegraf.cnf</code></pre></div>
+<p>启动 telegraf 服务</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker service create --replicas <span style="color:#bd93f9">1</span> --name telegraf --network influx --config <span style="color:#8be9fd;font-style:italic">src</span><span style="color:#ff79c6">=</span>telegraf,target<span style="color:#ff79c6">=</span>/etc/telegraf/telegraf.conf <span style="color:#bd93f9">192</span>.168.52.128:5000/ydhtelegraf</code></pre></div>
+<h4 id="4-启动-grafana-服务">4. 启动 grafana 服务</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker service create --replicas <span style="color:#bd93f9">1</span> --name grafana --network influx --publish <span style="color:#bd93f9">3000</span>:3000 <span style="color:#f1fa8c">&#39;192.168.52.128:5000/grafana&#39;</span></code></pre></div>
+<p>做一些基础的设置</p>
+
+<p><img src="/upload/2017/grafana_datasource.png" alt="grafana_datasource" /></p>
+
+<p>这里有要讲解的地方
+  - 在 docker 里, 因为是在同一个network下了, host可以通过 name 来直接访问, 因此, influxdb 的地址就是 <a href="http://influxdb:8086">http://influxdb:8086</a> , docker 会自动帮你处理映射问题. (在以前的版本有个 &ndash;link 的参数, 这是一个非常坑的东西, 后面被废弃了)
+  - 可以看到, 我特定把配置 access 解释放出来, 就是为了说明这件事.
+  - 当然, 在 telegraf 的采集配置文件下也要进行对应的 url 地址修改</p>
+
+<p>简单的配置一下展示页面,效果如下</p>
+
+<p><img src="/upload/2017/grafana.png" alt="grafana" /></p>
+
+<h4 id="我们最后来看一下总体的服务运行状况">我们最后来看一下总体的服务运行状况</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@ubuntu1:~# docker service ps <span style="color:#ff79c6">$(</span>docker service ls -q<span style="color:#ff79c6">)</span>
+ID                  NAME                IMAGE                                    NODE                DESIRED STATE       CURRENT STATE               ERROR                              PORTS
+9925er3baoao        telegraf.1          <span style="color:#bd93f9">192</span>.168.52.128:5000/ydhtelegraf:latest   ubuntu3             Running             Running <span style="color:#bd93f9">22</span> minutes ago                                         
+zr9bkz5crzl0        influxdb.1          <span style="color:#bd93f9">192</span>.168.52.128:5000/influxdb:latest      ubuntu2             Running             Running about an hour ago                                      
+dlxl3zlgpx8j        grafana.1           <span style="color:#bd93f9">192</span>.168.52.128:5000/grafana:latest       ubuntu3             Running             Running <span style="color:#bd93f9">2</span> hours ago                                            
+ovbuip43u760        hostname.1          <span style="color:#bd93f9">192</span>.168.52.128:5000/hostname:latest      ubuntu2             Running             Running <span style="color:#bd93f9">6</span> hours ago                                            
+h4oqfvhp37u4        registry.1          registry:2                               ubuntu2             Running             Running <span style="color:#bd93f9">6</span> hours ago                                            
+kttlrq3spsxw        portainer.1         portainer/portainer:latest               ubuntu1             Running             Running <span style="color:#bd93f9">7</span> hours ago                                            
+wlav3nc6ftop        hostname.2          <span style="color:#bd93f9">192</span>.168.52.128:5000/hostname:latest      ubuntu3             Running             Running <span style="color:#bd93f9">6</span> hours ago                                            
+nv11s85ozpda        hostname.3          <span style="color:#bd93f9">192</span>.168.52.128:5000/hostname:latest      ubuntu1             Running             Running <span style="color:#bd93f9">6</span> hours ago                                            </code></pre></div>
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>G1GC on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/g1gc/</link>
+    <description>Recent content in G1GC on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 24 Dec 2019 23:10:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/g1gc/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>G1GC 概念与性能调优 (jdk11)</title>
+      <link>https://hpeng526.github.io/posts/19/1912-g1gc/</link>
+      <pubDate>Tue, 24 Dec 2019 23:10:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/19/1912-g1gc/</guid>
+      <description>G1GC 概念与性能调优 (jdk11) 本文不讨论 G1 底层数据结构与算法, 从 G1 GC 行为上做简要介绍 G1 的过程 Garbage-First Garbage Collector 从官网的描述来看 G1 is a generational, incremental, parallel, mostly concurrent, stop-the-world, and evacuating garbage collector which monitors pause-time goals in each</description>
+    </item>
+    
+  </channel>
+</rss>

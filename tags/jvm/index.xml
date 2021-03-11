@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>JVM on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/jvm/</link>
+    <description>Recent content in JVM on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Mon, 06 Aug 2018 22:01:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/jvm/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>从 GC log 了解与分析 gc</title>
+      <link>https://hpeng526.github.io/posts/18/1808cmsgc/</link>
+      <pubDate>Mon, 06 Aug 2018 22:01:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/18/1808cmsgc/</guid>
+      <description>CMS 介绍 CMS, Concurrent Mark Sweep, 并发的标记清楚算法GC. CMS 执行 初始化标记 并发标记 并发预清理 重标记 并发清理 重置 环境配置是 JDK8, HotSpot VM 应用配置的参数 -XX:+UseConcMarkSweepGC // 使用 CMS GC -XX:+UseCMSInitiatingOccupancyOnly // 不基</description>
+    </item>
+    
+  </channel>
+</rss>

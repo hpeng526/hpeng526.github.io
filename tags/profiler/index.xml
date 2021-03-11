@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>profiler on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/profiler/</link>
+    <description>Recent content in profiler on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 08 Jan 2020 23:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/profiler/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>async-profiler</title>
+      <link>https://hpeng526.github.io/posts/20/2001-async-profiler/</link>
+      <pubDate>Wed, 08 Jan 2020 23:00:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/20/2001-async-profiler/</guid>
+      <description>async-profiler 一个低开销的, 不会有安全点偏差问题(Safepoint bias problem)的 Java 采样分析器. 它使用 HotSpot-specific APIs (AsyncGetCallTrace) 来收集堆栈和内存分配信息, perf_events 收集系统调</description>
+    </item>
+    
+  </channel>
+</rss>

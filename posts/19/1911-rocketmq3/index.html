@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>RocketMQ 顺序消息 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="RocketMQ 顺序消息"/>
+<meta name="twitter:description" content="什么是顺序消息 (RocketMQ 4.5.1) RocketMq支持的消息类型 Simple Message Order Message (FIFO) Broadcasting Scheduled messages Batch Transaction messages RocketMq 提供FIFO的有序消息. 局部消息有序, 可以保证同一个消息消费队列中消"/>
+
+    <meta property="og:title" content="RocketMQ 顺序消息" />
+<meta property="og:description" content="什么是顺序消息 (RocketMQ 4.5.1) RocketMq支持的消息类型 Simple Message Order Message (FIFO) Broadcasting Scheduled messages Batch Transaction messages RocketMq 提供FIFO的有序消息. 局部消息有序, 可以保证同一个消息消费队列中消" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/19/1911-rocketmq3/" />
+<meta property="article:published_time" content="2019-11-21T23:10:00+00:00" />
+<meta property="article:modified_time" content="2019-11-21T23:10:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">RocketMQ 顺序消息</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Nov 21, 2019
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          6 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/java/">Java</a><a class="tag" href="https://hpeng526.github.io/tags/rocketmq/">RocketMQ</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="什么是顺序消息-rocketmq-4-5-1">什么是顺序消息 (RocketMQ 4.5.1)</h1>
+
+<h2 id="rocketmq支持的消息类型">RocketMq支持的消息类型</h2>
+
+<ol>
+<li>Simple Message</li>
+<li><strong>Order Message (FIFO)</strong></li>
+<li>Broadcasting</li>
+<li>Scheduled messages</li>
+<li>Batch</li>
+<li>Transaction messages</li>
+</ol>
+
+<p>RocketMq 提供FIFO的有序消息. 局部消息有序, 可以保证同一个消息消费队列中消息被顺序消费,如果要保证全局顺序, 则只能将topic配置成一个queue了.</p>
+
+<!-- more -->
+
+<h2 id="如何使用顺序消息">如何使用顺序消息</h2>
+
+<p>顺序消息有两点要注意的</p>
+
+<ol>
+<li>发送方, 也就是 producer 要保证发送到同一个queue</li>
+<li>消费方, 也就是 consumer 要保证是集群模式, 并且按顺序消费queue内容</li>
+</ol>
+
+<p>看下官方例子</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class OrderedProducer {
+    public static void main(String[] args) throws Exception {
+        <span style="color:#6272a4">//Instantiate with a producer group name.
+</span><span style="color:#6272a4"></span>        MQProducer producer <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> DefaultMQProducer(<span style="color:#f1fa8c">&#34;example_group_name&#34;</span>);
+        <span style="color:#6272a4">//Launch the instance.
+</span><span style="color:#6272a4"></span>        producer.<span style="color:#50fa7b">start</span>();
+        String[] tags <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> String[] {<span style="color:#f1fa8c">&#34;TagA&#34;</span>, <span style="color:#f1fa8c">&#34;TagB&#34;</span>, <span style="color:#f1fa8c">&#34;TagC&#34;</span>, <span style="color:#f1fa8c">&#34;TagD&#34;</span>, <span style="color:#f1fa8c">&#34;TagE&#34;</span>};
+        <span style="color:#ff79c6">for</span> (int i <span style="color:#ff79c6">=</span> 0; i <span style="color:#ff79c6">&lt;</span> 100; i<span style="color:#ff79c6">++</span>) {
+            int orderId <span style="color:#ff79c6">=</span> i <span style="color:#ff79c6">%</span> 10;
+            <span style="color:#6272a4">//Create a message instance, specifying topic, tag and message body.
+</span><span style="color:#6272a4"></span>            Message msg <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Message(<span style="color:#f1fa8c">&#34;TopicTestjjj&#34;</span>, tags[i <span style="color:#ff79c6">%</span> tags.<span style="color:#50fa7b">length</span>], <span style="color:#f1fa8c">&#34;KEY&#34;</span> <span style="color:#ff79c6">+</span> i,
+                    (<span style="color:#f1fa8c">&#34;Hello RocketMQ &#34;</span> <span style="color:#ff79c6">+</span> i).<span style="color:#50fa7b">getBytes</span>(RemotingHelper.<span style="color:#50fa7b">DEFAULT_CHARSET</span>));
+            SendResult sendResult <span style="color:#ff79c6">=</span> producer.<span style="color:#50fa7b">send</span>(msg, <span style="color:#ff79c6">new</span> MessageQueueSelector() {
+            @Override
+            public MessageQueue select(List&lt;MessageQueue&gt; mqs, Message msg, Object arg) {
+                <span style="color:#6272a4">// QueueSelector 保证发送到同一个queue
+</span><span style="color:#6272a4"></span>                Integer id <span style="color:#ff79c6">=</span> (Integer) arg;
+                int index <span style="color:#ff79c6">=</span> id <span style="color:#ff79c6">%</span> mqs.<span style="color:#50fa7b">size</span>();
+                <span style="color:#ff79c6">return</span> mqs.<span style="color:#50fa7b">get</span>(index);
+            }
+            }, orderId);
+
+            System.<span style="color:#50fa7b">out</span>.<span style="color:#50fa7b">printf</span>(<span style="color:#f1fa8c">&#34;%s%n&#34;</span>, sendResult);
+        }
+        <span style="color:#6272a4">//server shutdown
+</span><span style="color:#6272a4"></span>        producer.<span style="color:#50fa7b">shutdown</span>();
+    }
+}</code></pre></div>
+<p>消费者</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class OrderedConsumer {
+    public static void main(String[] args) throws Exception {
+        DefaultMQPushConsumer consumer <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> DefaultMQPushConsumer(<span style="color:#f1fa8c">&#34;example_group_name&#34;</span>);
+
+        consumer.<span style="color:#50fa7b">setConsumeFromWhere</span>(ConsumeFromWhere.<span style="color:#50fa7b">CONSUME_FROM_FIRST_OFFSET</span>);
+
+        consumer.<span style="color:#50fa7b">subscribe</span>(<span style="color:#f1fa8c">&#34;TopicTest&#34;</span>, <span style="color:#f1fa8c">&#34;TagA || TagC || TagD&#34;</span>);
+        <span style="color:#6272a4">// 这里使用的 messageListener 是 MessageListenerOrderly
+</span><span style="color:#6272a4"></span>        <span style="color:#6272a4">// RocketMq 目前提供了两种, 另一个是 MessageListenerConcurrently
+</span><span style="color:#6272a4"></span>        consumer.<span style="color:#50fa7b">registerMessageListener</span>(<span style="color:#ff79c6">new</span> MessageListenerOrderly() {
+
+            AtomicLong consumeTimes <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> AtomicLong(0);
+            @Override
+            public ConsumeOrderlyStatus consumeMessage(List&lt;MessageExt&gt; msgs,
+                                                       ConsumeOrderlyContext context) {
+                context.<span style="color:#50fa7b">setAutoCommit</span>(<span style="color:#ff79c6">false</span>);
+                System.<span style="color:#50fa7b">out</span>.<span style="color:#50fa7b">printf</span>(Thread.<span style="color:#50fa7b">currentThread</span>().<span style="color:#50fa7b">getName</span>() <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; Receive New Messages: &#34;</span> <span style="color:#ff79c6">+</span> msgs <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;%n&#34;</span>);
+                <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumeTimes</span>.<span style="color:#50fa7b">incrementAndGet</span>();
+                <span style="color:#ff79c6">if</span> ((<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumeTimes</span>.<span style="color:#50fa7b">get</span>() <span style="color:#ff79c6">%</span> 2) <span style="color:#ff79c6">==</span> 0) {
+                    <span style="color:#6272a4">// 标记成功, 在autoCommit为false的时候, 不会提交进度
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">return</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">SUCCESS</span>;
+                } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> ((<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumeTimes</span>.<span style="color:#50fa7b">get</span>() <span style="color:#ff79c6">%</span> 3) <span style="color:#ff79c6">==</span> 0) {
+                    <span style="color:#6272a4">// 标记回滚
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">return</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">ROLLBACK</span>;
+                } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> ((<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumeTimes</span>.<span style="color:#50fa7b">get</span>() <span style="color:#ff79c6">%</span> 4) <span style="color:#ff79c6">==</span> 0) {
+                    <span style="color:#6272a4">// 标记提交, 会提交消费进度
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">return</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">COMMIT</span>;
+                } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> ((<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumeTimes</span>.<span style="color:#50fa7b">get</span>() <span style="color:#ff79c6">%</span> 5) <span style="color:#ff79c6">==</span> 0) {
+                    <span style="color:#6272a4">// 标记等会重新消费
+</span><span style="color:#6272a4"></span>                    context.<span style="color:#50fa7b">setSuspendCurrentQueueTimeMillis</span>(3000);
+                    <span style="color:#ff79c6">return</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">SUSPEND_CURRENT_QUEUE_A_MOMENT</span>;
+                }
+                <span style="color:#ff79c6">return</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">SUCCESS</span>;
+
+            }
+        });
+
+        consumer.<span style="color:#50fa7b">start</span>();
+
+        System.<span style="color:#50fa7b">out</span>.<span style="color:#50fa7b">printf</span>(<span style="color:#f1fa8c">&#34;Consumer Started.%n&#34;</span>);
+    }
+}</code></pre></div>
+<h2 id="rocketmq-内部是怎么实现的">RocketMQ 内部是怎么实现的</h2>
+
+<p>要先理解顺序消息是怎么实现的，先要大致了解 RocketMQ 本身消息的基本概念</p>
+
+<h3 id="topic">Topic</h3>
+
+<p>标识一类消息的逻辑名字，生产者传输消息到Topic，消费者从Topic拉去消息</p>
+
+<h3 id="message">Message</h3>
+
+<p>消息就是被转递的内容。</p>
+
+<h3 id="message-queue">Message Queue</h3>
+
+<p>消息物理管理单位。一个Topic将有若干个Queue。
+实际上，消息的发送与接收都是针对Message Queue的。默认的Producer消息发送，使用轮询的方式，选择Topic下的某一个Message Queue发送。Consumer消费的时候也会负载均衡地分配若干个Message Queue，只拉取对应Queue的消息。</p>
+
+<h3 id="message-model">Message Model</h3>
+
+<p>消费模式，分两种</p>
+
+<ol>
+<li>Clustering
+集群模式就是Consumer Group下的Consumer分摊消息，也就是一条消息只会被分配到组下的一个消费者</li>
+<li>Broadcasting
+广播模式就是把消息投递每一个Consumer Group下的Consumer，因此组下每个消费者都会消费一次消息</li>
+</ol>
+
+
+<script src="https://unpkg.com/mermaid@8.2.3/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({ 
+       theme: 'dark',
+       themeCSS: '',
+       cloneCssStyles: false,
+       useMaxWidth: true,
+       htmlLabels: false,
+       flowchart: { 
+              curve: 'basis' 
+       }		
+   });
+</script> 
+<div class="mermaid" align="left" >
+graph LR;
+
+pg(producer group) --> MQ1[Topic1 Message Queue1]
+pg(producer group) --> MQ2[Topic1 Message Queue2]
+pg(producer group) --> MQ3[Topic1 Message Queue3]
+
+MQ1 --> cg(consumer group)
+MQ2 --> cg(consumer group)
+MQ3 --> cg(consumer group)
+</div>
+
+<h2 id="顺序保证">顺序保证</h2>
+
+<p>看上面RocketMQ结构上得知，要保证顺序消息，首先，producer要保证消息的顺序发送，那么可以把需要保证顺序的消息发送到同一个Queue中，消费者消费保证单线程消费同一个Queue即可。</p>
+
+<p>RocketMQ就提供这种机制，producer 实现<code>MessageQueueSelector</code>来对消息进行分组顺序发送，消费者使用<code>MessageListenerOrderly</code>来保证消费的顺序性</p>
+
+<h3 id="具体实现">具体实现</h3>
+
+<p><code>MessageQueueSelector</code> 这个其实就是个Message Queue选择器策略的实现，自己控制消息发往哪个Message Queue</p>
+
+<p>TL;DR</p>
+
+<ol>
+<li>broker Message Queue 全局锁 (RebalanceImpl), 保证queue的分配唯一的消费者
+
+<ul>
+<li>集群模式中 consumer 要先获取 broker 上 Message Queue 的锁，才能进行消费</li>
+<li>广播模式不可用</li>
+</ul></li>
+<li>consumer 本地消息队列锁，持有锁操作此Queue</li>
+<li>consumer 消费锁，持有锁才能消费消息
+保证消息顺序处理的细粒度锁</li>
+</ol>
+
+<h4 id="consumemessageorderlyservice-主要方法">ConsumeMessageOrderlyService 主要方法</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class ConsumeMessageOrderlyService implements ConsumeMessageService {
+
+    public void start() {
+        <span style="color:#6272a4">// 判断是否是集群模式, 只能在集群模式使用顺序消费
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">if</span> (MessageModel.<span style="color:#50fa7b">CLUSTERING</span>.<span style="color:#50fa7b">equals</span>(ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">messageModel</span>())) {
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">scheduledExecutorService</span>.<span style="color:#50fa7b">scheduleAtFixedRate</span>(<span style="color:#ff79c6">new</span> Runnable() {
+                @Override
+                public void run() {
+                    ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">lockMQPeriodically</span>();
+                }
+            }, 1000 <span style="color:#ff79c6">*</span> 1, ProcessQueue.<span style="color:#50fa7b">REBALANCE_LOCK_INTERVAL</span>, TimeUnit.<span style="color:#50fa7b">MILLISECONDS</span>);
+        }
+    }
+
+    @Override
+    public void submitConsumeRequest(
+        final List<span style="color:#ff79c6">&lt;</span>MessageExt&gt; msgs,
+        final ProcessQueue processQueue,
+        final MessageQueue messageQueue,
+        final boolean dispathToConsume) {
+        <span style="color:#ff79c6">if</span> (dispathToConsume) {
+            ConsumeRequest consumeRequest <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ConsumeRequest(processQueue, messageQueue);
+            <span style="color:#6272a4">// 提交拉取的消息任务处理
+</span><span style="color:#6272a4"></span>            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumeExecutor</span>.<span style="color:#50fa7b">submit</span>(consumeRequest);
+        }
+    }
+
+    public synchronized boolean lockOneMQ(final MessageQueue mq) {
+        <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span><span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">stopped</span>) {
+            <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">getRebalanceImpl</span>().<span style="color:#50fa7b">lock</span>(mq);
+        }
+
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">false</span>;
+    }
+
+    private void submitConsumeRequestLater(
+        final ProcessQueue processQueue,
+        final MessageQueue messageQueue,
+        final long suspendTimeMillis
+    ) {
+        long timeMillis <span style="color:#ff79c6">=</span> suspendTimeMillis;
+        <span style="color:#ff79c6">if</span> (timeMillis <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">-</span>1) {
+            timeMillis <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getSuspendCurrentQueueTimeMillis</span>();
+        }
+
+        <span style="color:#ff79c6">if</span> (timeMillis <span style="color:#ff79c6">&lt;</span> 10) {
+            timeMillis <span style="color:#ff79c6">=</span> 10;
+        } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (timeMillis <span style="color:#ff79c6">&gt;</span> 30000) {
+            timeMillis <span style="color:#ff79c6">=</span> 30000;
+        }
+
+        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">scheduledExecutorService</span>.<span style="color:#50fa7b">schedule</span>(<span style="color:#ff79c6">new</span> Runnable() {
+
+            @Override
+            public void run() {
+                ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">submitConsumeRequest</span>(<span style="color:#ff79c6">null</span>, processQueue, messageQueue, <span style="color:#ff79c6">true</span>);
+            }
+        }, timeMillis, TimeUnit.<span style="color:#50fa7b">MILLISECONDS</span>);
+    }
+
+    public boolean processConsumeResult(
+        final List<span style="color:#ff79c6">&lt;</span>MessageExt&gt; msgs,
+        final ConsumeOrderlyStatus status,
+        final ConsumeOrderlyContext context,
+        final ConsumeRequest consumeRequest
+    ) {
+        boolean continueConsume <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">true</span>;
+        long commitOffset <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">-</span>1L;
+        <span style="color:#6272a4">// 如果开启了自动提交
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">if</span> (context.<span style="color:#50fa7b">isAutoCommit</span>()) {
+            <span style="color:#ff79c6">switch</span> (status) {
+                <span style="color:#ff79c6">case</span> COMMIT<span style="color:#ff79c6">:</span>
+                <span style="color:#ff79c6">case</span> ROLLBACK<span style="color:#ff79c6">:</span>
+                    <span style="color:#6272a4">// 如果开启了自动提交, COMMIT跟ROLLBACK都是不合法状态, 默认会SUCCESS
+</span><span style="color:#6272a4"></span>                    log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;the message queue consume result is illegal, we think you want to ack these message {}&#34;</span>,
+                        consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>());
+                <span style="color:#ff79c6">case</span> SUCCESS<span style="color:#ff79c6">:</span>
+                    <span style="color:#6272a4">// 标记已经提交
+</span><span style="color:#6272a4"></span>                    commitOffset <span style="color:#ff79c6">=</span> consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">commit</span>();
+                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">getConsumerStatsManager</span>().<span style="color:#50fa7b">incConsumeOKTPS</span>(consumerGroup, consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>().<span style="color:#50fa7b">getTopic</span>(), msgs.<span style="color:#50fa7b">size</span>());
+                    <span style="color:#ff79c6">break</span>;
+                <span style="color:#ff79c6">case</span> SUSPEND_CURRENT_QUEUE_A_MOMENT<span style="color:#ff79c6">:</span>
+                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">getConsumerStatsManager</span>().<span style="color:#50fa7b">incConsumeFailedTPS</span>(consumerGroup, consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>().<span style="color:#50fa7b">getTopic</span>(), msgs.<span style="color:#50fa7b">size</span>());
+                    <span style="color:#ff79c6">if</span> (checkReconsumeTimes(msgs)) {
+                        <span style="color:#6272a4">// 设置重消费
+</span><span style="color:#6272a4"></span>                        consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">makeMessageToCosumeAgain</span>(msgs);
+                        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">submitConsumeRequestLater</span>(
+                            consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>(),
+                            consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>(),
+                            context.<span style="color:#50fa7b">getSuspendCurrentQueueTimeMillis</span>());
+                        continueConsume <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">false</span>;
+                    } <span style="color:#ff79c6">else</span> {
+                        <span style="color:#6272a4">// 重消费校验不过, 标记提交
+</span><span style="color:#6272a4"></span>                        commitOffset <span style="color:#ff79c6">=</span> consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">commit</span>();
+                    }
+                    <span style="color:#ff79c6">break</span>;
+                <span style="color:#ff79c6">default</span><span style="color:#ff79c6">:</span>
+                    <span style="color:#ff79c6">break</span>;
+            }
+        } <span style="color:#ff79c6">else</span> {
+            <span style="color:#6272a4">// 没有开启自动提交
+</span><span style="color:#6272a4"></span>            <span style="color:#ff79c6">switch</span> (status) {
+                <span style="color:#ff79c6">case</span> SUCCESS<span style="color:#ff79c6">:</span>
+                    <span style="color:#6272a4">// success 不会提交确认已经提交
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">getConsumerStatsManager</span>().<span style="color:#50fa7b">incConsumeOKTPS</span>(consumerGroup, consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>().<span style="color:#50fa7b">getTopic</span>(), msgs.<span style="color:#50fa7b">size</span>());
+                    <span style="color:#ff79c6">break</span>;
+                <span style="color:#ff79c6">case</span> COMMIT<span style="color:#ff79c6">:</span>
+                    <span style="color:#6272a4">// commit 提交已经消费
+</span><span style="color:#6272a4"></span>                    commitOffset <span style="color:#ff79c6">=</span> consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">commit</span>();
+                    <span style="color:#ff79c6">break</span>;
+                <span style="color:#ff79c6">case</span> ROLLBACK<span style="color:#ff79c6">:</span>
+                    <span style="color:#6272a4">// 回滚消息
+</span><span style="color:#6272a4"></span>                    consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">rollback</span>();
+                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">submitConsumeRequestLater</span>(
+                        consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>(),
+                        consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>(),
+                        context.<span style="color:#50fa7b">getSuspendCurrentQueueTimeMillis</span>());
+                    continueConsume <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">false</span>;
+                    <span style="color:#ff79c6">break</span>;
+                <span style="color:#ff79c6">case</span> SUSPEND_CURRENT_QUEUE_A_MOMENT<span style="color:#ff79c6">:</span>
+                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">getConsumerStatsManager</span>().<span style="color:#50fa7b">incConsumeFailedTPS</span>(consumerGroup, consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>().<span style="color:#50fa7b">getTopic</span>(), msgs.<span style="color:#50fa7b">size</span>());
+                    <span style="color:#ff79c6">if</span> (checkReconsumeTimes(msgs)) {
+                        <span style="color:#6272a4">// 重消费
+</span><span style="color:#6272a4"></span>                        consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">makeMessageToCosumeAgain</span>(msgs);
+                        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">submitConsumeRequestLater</span>(
+                            consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>(),
+                            consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>(),
+                            context.<span style="color:#50fa7b">getSuspendCurrentQueueTimeMillis</span>());
+                        continueConsume <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">false</span>;
+                    }
+                    <span style="color:#ff79c6">break</span>;
+                <span style="color:#ff79c6">default</span><span style="color:#ff79c6">:</span>
+                    <span style="color:#ff79c6">break</span>;
+            }
+        }
+
+        <span style="color:#ff79c6">if</span> (commitOffset <span style="color:#ff79c6">&gt;=</span> 0 <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">!</span>consumeRequest.<span style="color:#50fa7b">getProcessQueue</span>().<span style="color:#50fa7b">isDropped</span>()) {
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">getOffsetStore</span>().<span style="color:#50fa7b">updateOffset</span>(consumeRequest.<span style="color:#50fa7b">getMessageQueue</span>(), commitOffset, <span style="color:#ff79c6">false</span>);
+        }
+
+        <span style="color:#ff79c6">return</span> continueConsume;
+    }
+
+    public ConsumerStatsManager getConsumerStatsManager() {
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">getConsumerStatsManager</span>();
+    }
+
+    private int getMaxReconsumeTimes() {
+        <span style="color:#6272a4">// default reconsume times: Integer.MAX_VALUE
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getMaxReconsumeTimes</span>() <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">-</span>1) {
+            <span style="color:#ff79c6">return</span> Integer.<span style="color:#50fa7b">MAX_VALUE</span>;
+        } <span style="color:#ff79c6">else</span> {
+            <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getMaxReconsumeTimes</span>();
+        }
+    }
+
+    private boolean checkReconsumeTimes(List&lt;MessageExt&gt; msgs) {
+        boolean suspend <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">false</span>;
+        <span style="color:#ff79c6">if</span> (msgs <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">!</span>msgs.<span style="color:#50fa7b">isEmpty</span>()) {
+            <span style="color:#ff79c6">for</span> (MessageExt msg <span style="color:#ff79c6">:</span> msgs) {
+                <span style="color:#ff79c6">if</span> (msg.<span style="color:#50fa7b">getReconsumeTimes</span>() <span style="color:#ff79c6">&gt;=</span> getMaxReconsumeTimes()) {
+                    MessageAccessor.<span style="color:#50fa7b">setReconsumeTime</span>(msg, String.<span style="color:#50fa7b">valueOf</span>(msg.<span style="color:#50fa7b">getReconsumeTimes</span>()));
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>sendMessageBack(msg)) {
+                        suspend <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">true</span>;
+                        msg.<span style="color:#50fa7b">setReconsumeTimes</span>(msg.<span style="color:#50fa7b">getReconsumeTimes</span>() <span style="color:#ff79c6">+</span> 1);
+                    }
+                } <span style="color:#ff79c6">else</span> {
+                    suspend <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">true</span>;
+                    msg.<span style="color:#50fa7b">setReconsumeTimes</span>(msg.<span style="color:#50fa7b">getReconsumeTimes</span>() <span style="color:#ff79c6">+</span> 1);
+                }
+            }
+        }
+        <span style="color:#ff79c6">return</span> suspend;
+    }
+
+    public boolean sendMessageBack(final MessageExt msg) {
+        <span style="color:#ff79c6">try</span> {
+            <span style="color:#6272a4">// max reconsume times exceeded then send to dead letter queue.
+</span><span style="color:#6272a4"></span>            Message newMsg <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Message(MixAll.<span style="color:#50fa7b">getRetryTopic</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getConsumerGroup</span>()), msg.<span style="color:#50fa7b">getBody</span>());
+            String originMsgId <span style="color:#ff79c6">=</span> MessageAccessor.<span style="color:#50fa7b">getOriginMessageId</span>(msg);
+            MessageAccessor.<span style="color:#50fa7b">setOriginMessageId</span>(newMsg, UtilAll.<span style="color:#50fa7b">isBlank</span>(originMsgId) <span style="color:#ff79c6">?</span> msg.<span style="color:#50fa7b">getMsgId</span>() <span style="color:#ff79c6">:</span> originMsgId);
+            newMsg.<span style="color:#50fa7b">setFlag</span>(msg.<span style="color:#50fa7b">getFlag</span>());
+            MessageAccessor.<span style="color:#50fa7b">setProperties</span>(newMsg, msg.<span style="color:#50fa7b">getProperties</span>());
+            MessageAccessor.<span style="color:#50fa7b">putProperty</span>(newMsg, MessageConst.<span style="color:#50fa7b">PROPERTY_RETRY_TOPIC</span>, msg.<span style="color:#50fa7b">getTopic</span>());
+            MessageAccessor.<span style="color:#50fa7b">setReconsumeTime</span>(newMsg, String.<span style="color:#50fa7b">valueOf</span>(msg.<span style="color:#50fa7b">getReconsumeTimes</span>()));
+            MessageAccessor.<span style="color:#50fa7b">setMaxReconsumeTimes</span>(newMsg, String.<span style="color:#50fa7b">valueOf</span>(getMaxReconsumeTimes()));
+            newMsg.<span style="color:#50fa7b">setDelayTimeLevel</span>(3 <span style="color:#ff79c6">+</span> msg.<span style="color:#50fa7b">getReconsumeTimes</span>());
+
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getDefaultMQPushConsumerImpl</span>().<span style="color:#50fa7b">getmQClientFactory</span>().<span style="color:#50fa7b">getDefaultMQProducer</span>().<span style="color:#50fa7b">send</span>(newMsg);
+            <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">true</span>;
+        } <span style="color:#ff79c6">catch</span> (Exception e) {
+            log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;sendMessageBack exception, group: &#34;</span> <span style="color:#ff79c6">+</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">consumerGroup</span> <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; msg: &#34;</span> <span style="color:#ff79c6">+</span> msg.<span style="color:#50fa7b">toString</span>(), e);
+        }
+
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">false</span>;
+    }
+
+    public void resetNamespace(final List<span style="color:#ff79c6">&lt;</span>MessageExt&gt; msgs) {
+        <span style="color:#ff79c6">for</span> (MessageExt msg <span style="color:#ff79c6">:</span> msgs) {
+            <span style="color:#ff79c6">if</span> (StringUtils.<span style="color:#50fa7b">isNotEmpty</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getNamespace</span>())) {
+                msg.<span style="color:#50fa7b">setTopic</span>(NamespaceUtil.<span style="color:#50fa7b">withoutNamespace</span>(msg.<span style="color:#50fa7b">getTopic</span>(), <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getNamespace</span>()));
+            }
+        }
+    }
+
+    class ConsumeRequest implements Runnable {
+        private final ProcessQueue processQueue;
+        private final MessageQueue messageQueue;
+
+        public ConsumeRequest(ProcessQueue processQueue, MessageQueue messageQueue) {
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span> <span style="color:#ff79c6">=</span> processQueue;
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span> <span style="color:#ff79c6">=</span> messageQueue;
+        }
+
+        public ProcessQueue getProcessQueue() {
+            <span style="color:#ff79c6">return</span> processQueue;
+        }
+
+        public MessageQueue getMessageQueue() {
+            <span style="color:#ff79c6">return</span> messageQueue;
+        }
+
+        <span style="color:#6272a4">// 处理进来的消息
+</span><span style="color:#6272a4"></span>        @Override
+        public void run() {
+            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isDropped</span>()) {
+                log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;run, the message queue not be able to consume, because it&#39;s dropped. {}&#34;</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+                <span style="color:#ff79c6">return</span>;
+            }
+
+            final Object objLock <span style="color:#ff79c6">=</span> messageQueueLock.<span style="color:#50fa7b">fetchLockObject</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+            <span style="color:#6272a4">// 本地消息队列锁, 控制在单队列消费中,只占用一个线程
+</span><span style="color:#6272a4"></span>            <span style="color:#8be9fd;font-style:italic">synchronized</span> (objLock) {
+                <span style="color:#ff79c6">if</span> (MessageModel.<span style="color:#50fa7b">BROADCASTING</span>.<span style="color:#50fa7b">equals</span>(ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">messageModel</span>())
+                    <span style="color:#ff79c6">||</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isLocked</span>() <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">!</span><span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isLockExpired</span>())) {
+                    <span style="color:#6272a4">// 广播类型 或者 队列锁了,并且锁有效
+</span><span style="color:#6272a4"></span>                    final long beginTime <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>();
+                    <span style="color:#6272a4">// 循环判断 continueConsume
+</span><span style="color:#6272a4"></span>                    <span style="color:#ff79c6">for</span> (boolean continueConsume <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">true</span>; continueConsume; ) {
+                        <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isDropped</span>()) {
+                            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;the message queue not be able to consume, because it&#39;s dropped. {}&#34;</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+                            <span style="color:#ff79c6">break</span>;
+                        }
+
+                        <span style="color:#ff79c6">if</span> (MessageModel.<span style="color:#50fa7b">CLUSTERING</span>.<span style="color:#50fa7b">equals</span>(ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">messageModel</span>())
+                            <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">!</span><span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isLocked</span>()) {
+                            <span style="color:#6272a4">// 集群模式 并 没锁, 重消费
+</span><span style="color:#6272a4"></span>                            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;the message queue not locked, so consume later, {}&#34;</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+                            ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">tryLockLaterAndReconsume</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>, 10);
+                            <span style="color:#ff79c6">break</span>;
+                        }
+
+                        <span style="color:#ff79c6">if</span> (MessageModel.<span style="color:#50fa7b">CLUSTERING</span>.<span style="color:#50fa7b">equals</span>(ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">messageModel</span>())
+                            <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isLockExpired</span>()) {
+                            <span style="color:#6272a4">// 集群模式 并 锁失效, 重消费
+</span><span style="color:#6272a4"></span>                            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;the message queue lock expired, so consume later, {}&#34;</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+                            ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">tryLockLaterAndReconsume</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>, 10);
+                            <span style="color:#ff79c6">break</span>;
+                        }
+
+                        long interval <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>() <span style="color:#ff79c6">-</span> beginTime;
+                        <span style="color:#ff79c6">if</span> (interval <span style="color:#ff79c6">&gt;</span> MAX_TIME_CONSUME_CONTINUOUSLY) {
+                            ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">submitConsumeRequestLater</span>(processQueue, messageQueue, 10);
+                            <span style="color:#ff79c6">break</span>;
+                        }
+
+                        final int consumeBatchSize <span style="color:#ff79c6">=</span>
+                            ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getConsumeMessageBatchMaxSize</span>();
+
+                        <span style="color:#6272a4">// 拉取待处理消息
+</span><span style="color:#6272a4"></span>                        List&lt;MessageExt&gt; msgs <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">takeMessags</span>(consumeBatchSize);
+                        defaultMQPushConsumerImpl.<span style="color:#50fa7b">resetRetryAndNamespace</span>(msgs, defaultMQPushConsumer.<span style="color:#50fa7b">getConsumerGroup</span>());
+                        <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>msgs.<span style="color:#50fa7b">isEmpty</span>()) {
+                            final ConsumeOrderlyContext context <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ConsumeOrderlyContext(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+
+                            ConsumeOrderlyStatus status <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+
+                            ConsumeMessageContext consumeMessageContext <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+                            <span style="color:#ff79c6">if</span> (ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">hasHook</span>()) {
+                                consumeMessageContext <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ConsumeMessageContext();
+                                consumeMessageContext
+                                    .<span style="color:#50fa7b">setConsumerGroup</span>(ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>.<span style="color:#50fa7b">getConsumerGroup</span>());
+                                consumeMessageContext.<span style="color:#50fa7b">setNamespace</span>(defaultMQPushConsumer.<span style="color:#50fa7b">getNamespace</span>());
+                                consumeMessageContext.<span style="color:#50fa7b">setMq</span>(messageQueue);
+                                consumeMessageContext.<span style="color:#50fa7b">setMsgList</span>(msgs);
+                                consumeMessageContext.<span style="color:#50fa7b">setSuccess</span>(<span style="color:#ff79c6">false</span>);
+                                <span style="color:#6272a4">// init the consume context type
+</span><span style="color:#6272a4"></span>                                consumeMessageContext.<span style="color:#50fa7b">setProps</span>(<span style="color:#ff79c6">new</span> HashMap<span style="color:#ff79c6">&lt;</span>String, String<span style="color:#ff79c6">&gt;</span>());
+                                ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">executeHookBefore</span>(consumeMessageContext);
+                            }
+
+                            long beginTimestamp <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>();
+                            ConsumeReturnType returnType <span style="color:#ff79c6">=</span> ConsumeReturnType.<span style="color:#50fa7b">SUCCESS</span>;
+                            boolean hasException <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">false</span>;
+                            <span style="color:#ff79c6">try</span> {
+                                <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">getLockConsume</span>().<span style="color:#50fa7b">lock</span>();
+                                <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isDropped</span>()) {
+                                    log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;consumeMessage, the message queue not be able to consume, because it&#39;s dropped. {}&#34;</span>,
+                                        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+                                    <span style="color:#ff79c6">break</span>;
+                                }
+                                <span style="color:#6272a4">// 调用处理的方法, 返回处理状态
+</span><span style="color:#6272a4"></span>                                status <span style="color:#ff79c6">=</span> messageListener.<span style="color:#50fa7b">consumeMessage</span>(Collections.<span style="color:#50fa7b">unmodifiableList</span>(msgs), context);
+                            } <span style="color:#ff79c6">catch</span> (Throwable e) {
+                                log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;consumeMessage exception: {} Group: {} Msgs: {} MQ: {}&#34;</span>,
+                                    RemotingHelper.<span style="color:#50fa7b">exceptionSimpleDesc</span>(e),
+                                    ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">consumerGroup</span>,
+                                    msgs,
+                                    messageQueue);
+                                hasException <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">true</span>;
+                            } <span style="color:#ff79c6">finally</span> {
+                                <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">getLockConsume</span>().<span style="color:#50fa7b">unlock</span>();
+                            }
+
+                            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> status
+                                <span style="color:#ff79c6">||</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">ROLLBACK</span> <span style="color:#ff79c6">==</span> status
+                                <span style="color:#ff79c6">||</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">SUSPEND_CURRENT_QUEUE_A_MOMENT</span> <span style="color:#ff79c6">==</span> status) {
+                                <span style="color:#6272a4">// 返回状态有问题, 记录日志
+</span><span style="color:#6272a4"></span>                                log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;consumeMessage Orderly return not OK, Group: {} Msgs: {} MQ: {}&#34;</span>,
+                                    ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">consumerGroup</span>,
+                                    msgs,
+                                    messageQueue);
+                            }
+
+                            long consumeRT <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>() <span style="color:#ff79c6">-</span> beginTimestamp;
+                            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> status) {
+                                <span style="color:#ff79c6">if</span> (hasException) {
+                                    returnType <span style="color:#ff79c6">=</span> ConsumeReturnType.<span style="color:#50fa7b">EXCEPTION</span>;
+                                } <span style="color:#ff79c6">else</span> {
+                                    returnType <span style="color:#ff79c6">=</span> ConsumeReturnType.<span style="color:#50fa7b">RETURNNULL</span>;
+                                }
+                            } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (consumeRT <span style="color:#ff79c6">&gt;=</span> defaultMQPushConsumer.<span style="color:#50fa7b">getConsumeTimeout</span>() <span style="color:#ff79c6">*</span> 60 <span style="color:#ff79c6">*</span> 1000) {
+                                returnType <span style="color:#ff79c6">=</span> ConsumeReturnType.<span style="color:#50fa7b">TIME_OUT</span>;
+                            } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (ConsumeOrderlyStatus.<span style="color:#50fa7b">SUSPEND_CURRENT_QUEUE_A_MOMENT</span> <span style="color:#ff79c6">==</span> status) {
+                                returnType <span style="color:#ff79c6">=</span> ConsumeReturnType.<span style="color:#50fa7b">FAILED</span>;
+                            } <span style="color:#ff79c6">else</span> <span style="color:#ff79c6">if</span> (ConsumeOrderlyStatus.<span style="color:#50fa7b">SUCCESS</span> <span style="color:#ff79c6">==</span> status) {
+                                returnType <span style="color:#ff79c6">=</span> ConsumeReturnType.<span style="color:#50fa7b">SUCCESS</span>;
+                            }
+
+                            <span style="color:#ff79c6">if</span> (ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">hasHook</span>()) {
+                                consumeMessageContext.<span style="color:#50fa7b">getProps</span>().<span style="color:#50fa7b">put</span>(MixAll.<span style="color:#50fa7b">CONSUME_CONTEXT_TYPE</span>, returnType.<span style="color:#50fa7b">name</span>());
+                            }
+
+                            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> status) {
+                                status <span style="color:#ff79c6">=</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">SUSPEND_CURRENT_QUEUE_A_MOMENT</span>;
+                            }
+
+                            <span style="color:#ff79c6">if</span> (ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">hasHook</span>()) {
+                                consumeMessageContext.<span style="color:#50fa7b">setStatus</span>(status.<span style="color:#50fa7b">toString</span>());
+                                consumeMessageContext
+                                    .<span style="color:#50fa7b">setSuccess</span>(ConsumeOrderlyStatus.<span style="color:#50fa7b">SUCCESS</span> <span style="color:#ff79c6">==</span> status <span style="color:#ff79c6">||</span> ConsumeOrderlyStatus.<span style="color:#50fa7b">COMMIT</span> <span style="color:#ff79c6">==</span> status);
+                                ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMQPushConsumerImpl</span>.<span style="color:#50fa7b">executeHookAfter</span>(consumeMessageContext);
+                            }
+
+                            ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">getConsumerStatsManager</span>()
+                                .<span style="color:#50fa7b">incConsumeRT</span>(ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">consumerGroup</span>, messageQueue.<span style="color:#50fa7b">getTopic</span>(), consumeRT);
+                            <span style="color:#6272a4">// 处理返回的状态结果, 判断是否继续消费
+</span><span style="color:#6272a4"></span>                            continueConsume <span style="color:#ff79c6">=</span> ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">processConsumeResult</span>(msgs, status, context, <span style="color:#ff79c6">this</span>);
+                        } <span style="color:#ff79c6">else</span> {
+                            continueConsume <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">false</span>;
+                        }
+                    }
+                } <span style="color:#ff79c6">else</span> {
+                    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>.<span style="color:#50fa7b">isDropped</span>()) {
+                        log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;the message queue not be able to consume, because it&#39;s dropped. {}&#34;</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>);
+                        <span style="color:#ff79c6">return</span>;
+                    }
+
+                    ConsumeMessageOrderlyService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">tryLockLaterAndReconsume</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageQueue</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">processQueue</span>, 100);
+                }
+            }
+        }
+
+    }
+
+}</code></pre></div>
+<h3 id="消费结果处理">消费结果处理</h3>
+
+<p>在没有开启自动提交的情况下</p>
+
+<ol>
+<li>SUCCESS：消费成功但不提交。</li>
+<li>ROLLBACK：消费失败，消费回滚。</li>
+<li>COMMIT：消费成功提交并且提交。</li>
+<li>SUSPEND_CURRENT_QUEUE_A_MOMENT：消费失败，挂起消费队列一会会，稍后继续消费。</li>
+</ol>
+
+<p>开启的话</p>
+
+<ol>
+<li>SUCCESS：消费成功并提交</li>
+<li>SUSPEND_CURRENT_QUEUE_A_MOMENT：消费失败，挂起消费队列一会会，稍后继续消费。</li>
+</ol>
+
+<p>超过重试次数，RocketMQ会把消息发到死信队列里面去(broker 判断最大重试次数，原本应该是放入重试队列，超过就扔到死信队列了)</p>
+
+<h2 id="总结">总结</h2>
+
+<ol>
+<li>发送方保证Message Queue里面的消息是顺序的</li>
+<li>消费方使用ConsumeOrderlyStatus消息消息</li>
+<li>处理消费结果状态，保证消息的状态正确</li>
+</ol>
+
+<h2 id="问题">问题</h2>
+
+<ol>
+<li>上面描述的是局部顺序保证，要全局顺序保证只能Topic下只有一个Message Queue。</li>
+</ol>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

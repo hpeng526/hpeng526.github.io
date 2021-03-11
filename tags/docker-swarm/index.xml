@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Docker Swarm on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/docker-swarm/</link>
+    <description>Recent content in Docker Swarm on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Tue, 25 Jul 2017 23:18:47 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/docker-swarm/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Docker生态使用与编排</title>
+      <link>https://hpeng526.github.io/posts/17/1707docker%E7%94%9F%E6%80%81%E4%BD%BF%E7%94%A8%E4%B8%8E%E7%BC%96%E6%8E%92/</link>
+      <pubDate>Tue, 25 Jul 2017 23:18:47 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/17/1707docker%E7%94%9F%E6%80%81%E4%BD%BF%E7%94%A8%E4%B8%8E%E7%BC%96%E6%8E%92/</guid>
+      <description>Docker生态使用与编排 Docker 介绍 Docker 是一种容器技术，强依赖linux内核 容器（Container） 有时候也被称为操作系统级虚拟化，以区别传统的</description>
+    </item>
+    
+  </channel>
+</rss>

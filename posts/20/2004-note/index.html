@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>采坑笔记 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="采坑笔记"/>
+<meta name="twitter:description" content="笔记 RoekctMq 踩坑 同一个进程消费不同mq集群, 出现问题 // DefaultMQPushConsumerImpl.class public synchronized void start() throws MQClientException { switch (this.serviceState) { case CREATE_JUST: /** ignore */ this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPushConsumer, this.rpcHook); /** ignore */ } }// MQClientManager.class public MQClientInstance getAndCreateMQClientInstance(final ClientConfig clientConfig, RPCHook rpcHook) { String clientId = clientConfig.buildMQClientId(); MQClientInstance instance = this.factoryTable.get(clientId); if (null == instance)"/>
+
+    <meta property="og:title" content="采坑笔记" />
+<meta property="og:description" content="笔记 RoekctMq 踩坑 同一个进程消费不同mq集群, 出现问题 // DefaultMQPushConsumerImpl.class public synchronized void start() throws MQClientException { switch (this.serviceState) { case CREATE_JUST: /** ignore */ this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPushConsumer, this.rpcHook); /** ignore */ } }// MQClientManager.class public MQClientInstance getAndCreateMQClientInstance(final ClientConfig clientConfig, RPCHook rpcHook) { String clientId = clientConfig.buildMQClientId(); MQClientInstance instance = this.factoryTable.get(clientId); if (null == instance)" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/20/2004-note/" />
+<meta property="article:published_time" content="2020-04-19T23:00:00+00:00" />
+<meta property="article:modified_time" content="2020-04-19T23:00:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">采坑笔记</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Apr 19, 2020
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          1 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/java/">Java</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="笔记">笔记</h1>
+
+<h2 id="roekctmq-踩坑">RoekctMq 踩坑</h2>
+
+<ol>
+<li><p>同一个进程消费不同mq集群, 出现问题</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// DefaultMQPushConsumerImpl.class
+</span><span style="color:#6272a4"></span>public synchronized void start() throws MQClientException {
+    <span style="color:#ff79c6">switch</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">serviceState</span>) {
+        <span style="color:#ff79c6">case</span> CREATE_JUST<span style="color:#ff79c6">:</span>
+           <span style="color:#6272a4">/**
+</span><span style="color:#6272a4">           ignore
+</span><span style="color:#6272a4">           */</span>
+
+            <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">mQClientFactory</span> <span style="color:#ff79c6">=</span> MQClientManager.<span style="color:#50fa7b">getInstance</span>().<span style="color:#50fa7b">getAndCreateMQClientInstance</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMQPushConsumer</span>, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">rpcHook</span>);
+             <span style="color:#6272a4">/**
+</span><span style="color:#6272a4">           ignore
+</span><span style="color:#6272a4">           */</span>
+    }
+}</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// MQClientManager.class
+</span><span style="color:#6272a4"></span>public MQClientInstance getAndCreateMQClientInstance(final ClientConfig clientConfig, RPCHook rpcHook) {
+    String clientId <span style="color:#ff79c6">=</span> clientConfig.<span style="color:#50fa7b">buildMQClientId</span>();
+    MQClientInstance instance <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">factoryTable</span>.<span style="color:#50fa7b">get</span>(clientId);
+    <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> instance) {
+        instance <span style="color:#ff79c6">=</span>
+            <span style="color:#ff79c6">new</span> MQClientInstance(clientConfig.<span style="color:#50fa7b">cloneClientConfig</span>(),
+                <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">factoryIndexGenerator</span>.<span style="color:#50fa7b">getAndIncrement</span>(), clientId, rpcHook);
+        MQClientInstance prev <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">factoryTable</span>.<span style="color:#50fa7b">putIfAbsent</span>(clientId, instance);
+        <span style="color:#ff79c6">if</span> (prev <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+            instance <span style="color:#ff79c6">=</span> prev;
+            log.<span style="color:#50fa7b">warn</span>(<span style="color:#f1fa8c">&#34;Returned Previous MQClientInstance for clientId:[{}]&#34;</span>, clientId);
+        } <span style="color:#ff79c6">else</span> {
+            log.<span style="color:#50fa7b">info</span>(<span style="color:#f1fa8c">&#34;Created new MQClientInstance for clientId:[{}]&#34;</span>, clientId);
+        }
+    }
+
+    <span style="color:#ff79c6">return</span> instance;
+}</code></pre></div></li>
+
+<li><p>拿取的 clientId 没有特殊配置, 因此拿的是上一个注册的</p></li>
+
+<li><p>需要特别配置instanceName</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// ClientConfig.java
+</span><span style="color:#6272a4"></span>public String buildMQClientId() {
+StringBuilder sb <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> StringBuilder();
+sb.<span style="color:#50fa7b">append</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">getClientIP</span>());
+
+sb.<span style="color:#50fa7b">append</span>(<span style="color:#f1fa8c">&#34;@&#34;</span>);
+sb.<span style="color:#50fa7b">append</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">getInstanceName</span>());
+<span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span>UtilAll.<span style="color:#50fa7b">isBlank</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">unitName</span>)) {
+    sb.<span style="color:#50fa7b">append</span>(<span style="color:#f1fa8c">&#34;@&#34;</span>);
+    sb.<span style="color:#50fa7b">append</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">unitName</span>);
+}
+
+<span style="color:#ff79c6">return</span> sb.<span style="color:#50fa7b">toString</span>();
+}
+
+public String getInstanceName() {
+    <span style="color:#ff79c6">return</span> instanceName;
+}
+
+public void setInstanceName(String instanceName) {
+<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">instanceName</span> <span style="color:#ff79c6">=</span> instanceName;
+}
+
+public void changeInstanceNameToPID() {
+<span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">instanceName</span>.<span style="color:#50fa7b">equals</span>(<span style="color:#f1fa8c">&#34;DEFAULT&#34;</span>)) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">instanceName</span> <span style="color:#ff79c6">=</span> String.<span style="color:#50fa7b">valueOf</span>(UtilAll.<span style="color:#50fa7b">getPid</span>());
+}
+}</code></pre></div></li>
+</ol>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

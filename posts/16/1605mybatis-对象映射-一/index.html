@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>MyBatis 对象映射 （一） // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="MyBatis 对象映射 （一）"/>
+<meta name="twitter:description" content="Note: 尽量少用关联嵌套查询，因为关联嵌套查询会导致 N&#43;1 查询问题，也就是说 如果你执行了一条SQL语句来获取结果列表(1) 对于返回的每一个查询语句，都"/>
+
+    <meta property="og:title" content="MyBatis 对象映射 （一）" />
+<meta property="og:description" content="Note: 尽量少用关联嵌套查询，因为关联嵌套查询会导致 N&#43;1 查询问题，也就是说 如果你执行了一条SQL语句来获取结果列表(1) 对于返回的每一个查询语句，都" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/16/1605mybatis-%E5%AF%B9%E8%B1%A1%E6%98%A0%E5%B0%84-%E4%B8%80/" />
+<meta property="article:published_time" content="2016-05-26T19:55:57+00:00" />
+<meta property="article:modified_time" content="2016-05-26T19:55:57+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">MyBatis 对象映射 （一）</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          May 26, 2016
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          2 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/mybatis/">mybatis</a><a class="tag" href="https://hpeng526.github.io/tags/association/">association</a><a class="tag" href="https://hpeng526.github.io/tags/collection/">collection</a><a class="tag" href="https://hpeng526.github.io/tags/%E5%AF%B9%E8%B1%A1%E5%85%B3%E8%81%94/">对象关联</a><a class="tag" href="https://hpeng526.github.io/tags/%E9%9B%86%E5%90%88%E5%B5%8C%E5%A5%97/">集合嵌套</a><a class="tag" href="https://hpeng526.github.io/tags/%E5%B5%8C%E5%A5%97%E6%9F%A5%E8%AF%A2/">嵌套查询</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<p>Note: 尽量少用关联嵌套查询，因为关联嵌套查询会导致 N+1 查询问题，也就是说</p>
+
+<ul>
+<li><p>如果你执行了一条SQL语句来获取结果列表(1)</p></li>
+
+<li><p>对于返回的每一个查询语句，都会执行查询细节的SQL语句(N)</p></li>
+
+<li><p>至于为什么还要使用，是因为写不出很优美的各种JOIN语句，又或是写出的JOIN语句出现了一个奇怪的问题</p></li>
+</ul>
+
+<!-- more -->
+
+<h2 id="对象关联-集合嵌套">对象关联，集合嵌套</h2>
+
+<h3 id="建立对应的表">建立对应的表</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">DROP</span> <span style="color:#ff79c6">TABLE</span> <span style="color:#ff79c6">IF</span> <span style="color:#ff79c6">EXISTS</span> <span style="color:#ff79c6">`</span>t_items<span style="color:#ff79c6">`</span>;
+<span style="color:#ff79c6">CREATE</span> <span style="color:#ff79c6">TABLE</span> <span style="color:#ff79c6">`</span>t_items<span style="color:#ff79c6">`</span> (
+  <span style="color:#ff79c6">`</span>id<span style="color:#ff79c6">`</span> <span style="color:#8be9fd;font-style:italic">int</span>(<span style="color:#bd93f9">8</span>) <span style="color:#ff79c6">NOT</span> <span style="color:#ff79c6">NULL</span> AUTO_INCREMENT,
+  <span style="color:#ff79c6">`</span>name<span style="color:#ff79c6">`</span> <span style="color:#8be9fd;font-style:italic">varchar</span>(<span style="color:#bd93f9">20</span>) <span style="color:#ff79c6">DEFAULT</span> <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">PRIMARY</span> <span style="color:#ff79c6">KEY</span> (<span style="color:#ff79c6">`</span>id<span style="color:#ff79c6">`</span>)
+) ENGINE<span style="color:#ff79c6">=</span>InnoDB AUTO_INCREMENT<span style="color:#ff79c6">=</span><span style="color:#bd93f9">100</span> <span style="color:#ff79c6">DEFAULT</span> CHARSET<span style="color:#ff79c6">=</span>utf8mb4;
+
+<span style="color:#ff79c6">DROP</span> <span style="color:#ff79c6">TABLE</span> <span style="color:#ff79c6">IF</span> <span style="color:#ff79c6">EXISTS</span> <span style="color:#ff79c6">`</span>t_item_status<span style="color:#ff79c6">`</span>;
+<span style="color:#ff79c6">CREATE</span> <span style="color:#ff79c6">TABLE</span> <span style="color:#ff79c6">`</span>t_item_status<span style="color:#ff79c6">`</span> (
+  <span style="color:#ff79c6">`</span>itemId<span style="color:#ff79c6">`</span> <span style="color:#8be9fd;font-style:italic">int</span>(<span style="color:#bd93f9">8</span>) <span style="color:#ff79c6">NOT</span> <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">`</span>status<span style="color:#ff79c6">`</span> <span style="color:#8be9fd;font-style:italic">VARCHAR</span>(<span style="color:#bd93f9">100</span>),
+  <span style="color:#ff79c6">`</span>time<span style="color:#ff79c6">`</span> <span style="color:#ff79c6">TIMESTAMP</span>
+) ENGINE<span style="color:#ff79c6">=</span>InnoDB <span style="color:#ff79c6">DEFAULT</span> CHARSET<span style="color:#ff79c6">=</span>utf8mb4;
+
+<span style="color:#ff79c6">DROP</span> <span style="color:#ff79c6">TABLE</span> <span style="color:#ff79c6">IF</span> <span style="color:#ff79c6">EXISTS</span> <span style="color:#ff79c6">`</span>t_sub_items<span style="color:#ff79c6">`</span>;
+<span style="color:#ff79c6">CREATE</span> <span style="color:#ff79c6">TABLE</span> <span style="color:#ff79c6">`</span>t_sub_items<span style="color:#ff79c6">`</span> (
+  <span style="color:#ff79c6">`</span>itemId<span style="color:#ff79c6">`</span> <span style="color:#8be9fd;font-style:italic">int</span>(<span style="color:#bd93f9">8</span>) <span style="color:#ff79c6">NOT</span> <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">`</span>name<span style="color:#ff79c6">`</span> <span style="color:#8be9fd;font-style:italic">varchar</span>(<span style="color:#bd93f9">100</span>)
+) ENGINE<span style="color:#ff79c6">=</span>InnoDB <span style="color:#ff79c6">DEFAULT</span> CHARSET<span style="color:#ff79c6">=</span>utf8mb4;</code></pre></div>
+<h3 id="建立对应的po对象">建立对应的po对象</h3>
+
+<ul>
+<li><p>Items.java</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class Items {
+
+private Integer id;
+
+private String name;
+
+private ItemStatus status;
+
+private List<span style="color:#ff79c6">&lt;</span>SubItem&gt; subItems;
+
+public ItemStatus getStatus() {
+    <span style="color:#ff79c6">return</span> status;
+}
+
+public void setStatus(ItemStatus status) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">status</span> <span style="color:#ff79c6">=</span> status;
+}
+
+public Integer getId() {
+    <span style="color:#ff79c6">return</span> id;
+}
+
+public void setId(Integer id) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">id</span> <span style="color:#ff79c6">=</span> id;
+}
+
+public String getName() {
+    <span style="color:#ff79c6">return</span> name;
+}
+
+public void setName(String name) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">name</span> <span style="color:#ff79c6">=</span> name;
+}
+
+public List<span style="color:#ff79c6">&lt;</span>SubItem&gt; getSubItems() {
+    <span style="color:#ff79c6">return</span> subItems;
+}
+
+public void setSubItems(List&lt;SubItem&gt; subItems) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">subItems</span> <span style="color:#ff79c6">=</span> subItems;
+}</code></pre></div></li>
+
+<li><p>ItemStatus.java</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class ItemStatus {
+
+private String status;
+
+private Date time;
+
+public String getStatus() {
+    <span style="color:#ff79c6">return</span> status;
+}
+
+public void setStatus(String status) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">status</span> <span style="color:#ff79c6">=</span> status;
+}
+
+public Date getTime() {
+    <span style="color:#ff79c6">return</span> time;
+}
+
+public void setTime(Date time) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">time</span> <span style="color:#ff79c6">=</span> time;
+}
+}</code></pre></div></li>
+
+<li><p>SubItem.java</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class SubItem {
+
+private Integer itemId;
+
+private String name;
+
+public Integer getItemId() {
+    <span style="color:#ff79c6">return</span> itemId;
+}
+
+public void setItemId(Integer itemId) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">itemId</span> <span style="color:#ff79c6">=</span> itemId;
+}
+
+public String getName() {
+    <span style="color:#ff79c6">return</span> name;
+}
+
+public void setName(String name) {
+    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">name</span> <span style="color:#ff79c6">=</span> name;
+}
+}</code></pre></div></li>
+</ul>
+
+<h3 id="mapper-文件">mapper 文件</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#ff79c6">&lt;resultMap</span> <span style="color:#50fa7b">id=</span><span style="color:#f1fa8c">&#34;itemMap&#34;</span> <span style="color:#50fa7b">type=</span><span style="color:#f1fa8c">&#34;org.hpeng526.ssm.po.Items&#34;</span><span style="color:#ff79c6">&gt;</span>
+        <span style="color:#ff79c6">&lt;id</span> <span style="color:#50fa7b">property=</span><span style="color:#f1fa8c">&#34;id&#34;</span> <span style="color:#50fa7b">column=</span><span style="color:#f1fa8c">&#34;id&#34;</span> <span style="color:#ff79c6">/&gt;</span>
+        <span style="color:#ff79c6">&lt;result</span> <span style="color:#50fa7b">property=</span><span style="color:#f1fa8c">&#34;name&#34;</span> <span style="color:#50fa7b">column=</span><span style="color:#f1fa8c">&#34;name&#34;</span> <span style="color:#ff79c6">/&gt;</span>
+        <span style="color:#ff79c6">&lt;association</span> <span style="color:#50fa7b">property=</span><span style="color:#f1fa8c">&#34;status&#34;</span> <span style="color:#50fa7b">column=</span><span style="color:#f1fa8c">&#34;id&#34;</span> <span style="color:#50fa7b">select=</span><span style="color:#f1fa8c">&#34;selectStatus&#34;</span><span style="color:#ff79c6">/&gt;</span>
+        <span style="color:#ff79c6">&lt;collection</span> <span style="color:#50fa7b">property=</span><span style="color:#f1fa8c">&#34;subItems&#34;</span> <span style="color:#50fa7b">javaType=</span><span style="color:#f1fa8c">&#34;ArrayList&#34;</span> <span style="color:#50fa7b">ofType=</span><span style="color:#f1fa8c">&#34;org.hpeng526.ssm.po.SubItem&#34;</span> <span style="color:#50fa7b">column=</span><span style="color:#f1fa8c">&#34;id&#34;</span> <span style="color:#50fa7b">select=</span><span style="color:#f1fa8c">&#34;selectSubItems&#34;</span> <span style="color:#ff79c6">/&gt;</span>
+    <span style="color:#ff79c6">&lt;/resultMap&gt;</span>
+
+    <span style="color:#ff79c6">&lt;resultMap</span> <span style="color:#50fa7b">id=</span><span style="color:#f1fa8c">&#34;itemStatusMap&#34;</span> <span style="color:#50fa7b">type=</span><span style="color:#f1fa8c">&#34;org.hpeng526.ssm.po.ItemStatus&#34;</span><span style="color:#ff79c6">&gt;</span>
+        <span style="color:#ff79c6">&lt;result</span> <span style="color:#50fa7b">property=</span><span style="color:#f1fa8c">&#34;status&#34;</span> <span style="color:#50fa7b">column=</span><span style="color:#f1fa8c">&#34;status&#34;</span> <span style="color:#ff79c6">/&gt;</span>
+        <span style="color:#ff79c6">&lt;result</span> <span style="color:#50fa7b">property=</span><span style="color:#f1fa8c">&#34;time&#34;</span> <span style="color:#50fa7b">column=</span><span style="color:#f1fa8c">&#34;time&#34;</span> <span style="color:#ff79c6">/&gt;</span>
+    <span style="color:#ff79c6">&lt;/resultMap&gt;</span>
+
+    <span style="color:#ff79c6">&lt;select</span> <span style="color:#50fa7b">id=</span><span style="color:#f1fa8c">&#34;selectSubItems&#34;</span> <span style="color:#50fa7b">resultType=</span><span style="color:#f1fa8c">&#34;org.hpeng526.ssm.po.SubItem&#34;</span> <span style="color:#ff79c6">&gt;</span>
+        SELECT * FROM t_sub_items WHERE itemId = #{id}
+    <span style="color:#ff79c6">&lt;/select&gt;</span>
+
+    <span style="color:#ff79c6">&lt;select</span> <span style="color:#50fa7b">id=</span><span style="color:#f1fa8c">&#34;selectStatus&#34;</span> <span style="color:#50fa7b">resultMap=</span><span style="color:#f1fa8c">&#34;itemStatusMap&#34;</span> <span style="color:#ff79c6">&gt;</span>
+        SELECT * FROM t_item_status WHERE itemId = #{id} ORDER BY time desc limit 1
+    <span style="color:#ff79c6">&lt;/select&gt;</span>
+
+    <span style="color:#ff79c6">&lt;select</span> <span style="color:#50fa7b">id=</span><span style="color:#f1fa8c">&#34;findAll&#34;</span> <span style="color:#50fa7b">resultMap=</span><span style="color:#f1fa8c">&#34;itemMap&#34;</span><span style="color:#ff79c6">&gt;</span>
+        SELECT * FROM t_items
+    <span style="color:#ff79c6">&lt;/select&gt;</span></code></pre></div>
+<h3 id="执行结果">执行结果</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">[{<span style="color:#ff79c6">&#34;id&#34;</span>:<span style="color:#bd93f9">101</span>,<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;item1&#34;</span>,<span style="color:#ff79c6">&#34;status&#34;</span>:{<span style="color:#ff79c6">&#34;status&#34;</span>:<span style="color:#f1fa8c">&#34;new status&#34;</span>,<span style="color:#ff79c6">&#34;time&#34;</span>:<span style="color:#bd93f9">1464266199000</span>},<span style="color:#ff79c6">&#34;subItems&#34;</span>:[{<span style="color:#ff79c6">&#34;itemId&#34;</span>:<span style="color:#bd93f9">101</span>,<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;笔&#34;</span>},{<span style="color:#ff79c6">&#34;itemId&#34;</span>:<span style="color:#bd93f9">101</span>,<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;book&#34;</span>}]}]</code></pre></div>
+<h3 id="特殊属性说明">特殊属性说明</h3>
+
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th align="center">描述</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>column</td>
+<td align="center">在 association, collection 标签里面的column属性指的是传递给下个查询的数据库列名(也可以是别名)</td>
+</tr>
+</tbody>
+</table>
+
+<ul>
+<li><p><a href="https://github.com/hpeng526/ssm/tree/mybatis">源码</a></p></li>
+
+<li><p><a href="http://www.mybatis.org/mybatis-3/sqlmap-xml.html">官方文档</a></p></li>
+</ul>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

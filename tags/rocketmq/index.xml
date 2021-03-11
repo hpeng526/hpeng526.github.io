@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>RocketMQ on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/rocketmq/</link>
+    <description>Recent content in RocketMQ on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 21 Nov 2019 23:10:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/rocketmq/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>RocketMQ 顺序消息</title>
+      <link>https://hpeng526.github.io/posts/19/1911-rocketmq3/</link>
+      <pubDate>Thu, 21 Nov 2019 23:10:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/19/1911-rocketmq3/</guid>
+      <description>什么是顺序消息 (RocketMQ 4.5.1) RocketMq支持的消息类型 Simple Message Order Message (FIFO) Broadcasting Scheduled messages Batch Transaction messages RocketMq 提供FIFO的有序消息. 局部消息有序, 可以保证同一个消息消费队列中消</description>
+    </item>
+    
+    <item>
+      <title>RocketMQ 延迟消息</title>
+      <link>https://hpeng526.github.io/posts/19/1908-rocketmq2/</link>
+      <pubDate>Tue, 01 Oct 2019 14:10:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/19/1908-rocketmq2/</guid>
+      <description>什么是延迟消息 (RocketMQ 4.5.1) RocketMq支持的消息类型 Simple Message Order Message (FIFO) Broadcasting Scheduled messages Batch Transaction messages 延迟消息跟普通消息的不一样之处就是, 他们不会立即发送, 而是等到给定时间</description>
+    </item>
+    
+    <item>
+      <title>RocketMQ 事务消息</title>
+      <link>https://hpeng526.github.io/posts/19/1908-rocketmq/</link>
+      <pubDate>Mon, 12 Aug 2019 22:10:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/19/1908-rocketmq/</guid>
+      <description>什么是事务消息 (RocketMQ 4.5.1) RocketMQ 中, 可以把事务消息当成两阶段提交的消息, 用来确保分布式系统的最终一致性.事务消息确保可以以原子方式执行本地事务和消息发送</description>
+    </item>
+    
+    <item>
+      <title>RocketMQ</title>
+      <link>https://hpeng526.github.io/posts/17/1706rocketmq/</link>
+      <pubDate>Fri, 02 Jun 2017 23:30:24 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/17/1706rocketmq/</guid>
+      <description>自建 RocketMQ RocketMQ 阿里开源的一款高性能、高吞吐量的消息中间件. 现在为Apache 孵化器项目 支持消息类型 有序 普通无序(现在我们的订阅模式都是无序模式) 负</description>
+    </item>
+    
+  </channel>
+</rss>

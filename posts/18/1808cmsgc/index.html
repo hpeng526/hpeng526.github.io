@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>从 GC log 了解与分析 gc // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="从 GC log 了解与分析 gc"/>
+<meta name="twitter:description" content="CMS 介绍 CMS, Concurrent Mark Sweep, 并发的标记清楚算法GC. CMS 执行 初始化标记 并发标记 并发预清理 重标记 并发清理 重置 环境配置是 JDK8, HotSpot VM 应用配置的参数 -XX:&#43;UseConcMarkSweepGC // 使用 CMS GC -XX:&#43;UseCMSInitiatingOccupancyOnly // 不基"/>
+
+    <meta property="og:title" content="从 GC log 了解与分析 gc" />
+<meta property="og:description" content="CMS 介绍 CMS, Concurrent Mark Sweep, 并发的标记清楚算法GC. CMS 执行 初始化标记 并发标记 并发预清理 重标记 并发清理 重置 环境配置是 JDK8, HotSpot VM 应用配置的参数 -XX:&#43;UseConcMarkSweepGC // 使用 CMS GC -XX:&#43;UseCMSInitiatingOccupancyOnly // 不基" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/18/1808cmsgc/" />
+<meta property="article:published_time" content="2018-08-06T22:01:00+00:00" />
+<meta property="article:modified_time" content="2018-08-06T22:01:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">从 GC log 了解与分析 gc</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Aug 6, 2018
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          3 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/jvm/">JVM</a><a class="tag" href="https://hpeng526.github.io/tags/cms/">CMS</a><a class="tag" href="https://hpeng526.github.io/tags/gc/">GC</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h2 id="cms-介绍">CMS 介绍</h2>
+
+<p>CMS, Concurrent Mark Sweep, 并发的标记清楚算法GC.</p>
+
+<h3 id="cms-执行">CMS 执行</h3>
+
+<ol>
+<li>初始化标记</li>
+<li>并发标记</li>
+<li>并发预清理</li>
+<li>重标记</li>
+<li>并发清理</li>
+<li>重置</li>
+</ol>
+
+<p>环境配置是 JDK8, HotSpot VM</p>
+
+<p>应用配置的参数</p>
+
+<pre><code>-XX:+UseConcMarkSweepGC                             // 使用 CMS GC
+-XX:+UseCMSInitiatingOccupancyOnly                  // 不基于运行时收集的数据来启动 CMS 垃圾收集的周期, 使用CMSInitiatingOccupancyFraction
+-XX:CMSInitiatingOccupancyFraction=70               // 使用70%后开始 CMS GC
+-XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses   // 显式 GC 执行 CMS GC 非 FGC
+-XX:+CMSClassUnloadingEnabled                       // CMS 也收集 PermGen space (https://blogs.oracle.com/poonam/about-g1-garbage-collector,-permanent-generation-and-metaspace)
+-XX:+ParallelRefProcEnabled                         // 并行处理 ref
+-XX:+CMSScavengeBeforeRemark                        // 在CMS remark前执行一次minor gc清理新生代, 减少stop-the-world时间
+-XX:+PrintGCDetails                                 // 打印 GC 详细信息
+-XX:+PrintGCDateStamps                              // 输出GC的时间戳
+</code></pre>
+
+<!-- more -->
+
+<p>CMS GC log 如下</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-CMS GC log" data-lang="CMS GC log">// initial mark stop-the-world
+2018-08-06T10:55:07.447+0800: 495808.570: [GC (CMS Initial Mark) [1 CMS-initial-mark: 1421882K(1966080K)] 1464386K(3027776K), 0.0610635 secs] [Times: user=0.05 sys=0.00, real=0.06 secs] 
+// concurrent mark
+2018-08-06T10:55:07.510+0800: 495808.633: [CMS-concurrent-mark-start]
+2018-08-06T10:55:38.879+0800: 495840.002: [CMS-concurrent-mark: 27.341/31.368 secs] [Times: user=48.82 sys=8.29, real=31.36 secs] 
+// concurrent preclean
+2018-08-06T10:55:38.879+0800: 495840.002: [CMS-concurrent-preclean-start]
+2018-08-06T10:55:39.303+0800: 495840.426: [CMS-concurrent-preclean: 0.131/0.424 secs] [Times: user=0.89 sys=0.05, real=0.43 secs] 
+// abortable preclean
+2018-08-06T10:55:39.303+0800: 495840.427: [CMS-concurrent-abortable-preclean-start]
+2018-08-06T10:55:39.303+0800: 495840.427: [CMS-concurrent-abortable-preclean: 0.000/0.000 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+// final remark stop-the-world
+2018-08-06T10:55:39.320+0800: 495840.444: [GC (CMS Final Remark) [YG occupancy: 237032 K (1061696 K)]2018-08-06T10:55:39.321+0800: 495840.444: [GC (CMS Final Remark) 2018-08-06T10:55:39.321+0800: 495840.444: [ParNew: 237032K-&gt;237032K(1061696K), 0.0000520 secs] 2068900K-&gt;2068900K(3027776K), 0.0004108 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+// rescan
+2018-08-06T10:55:39.321+0800: 495840.444: [Rescan (parallel) , 0.1066672 secs]2018-08-06T10:55:39.428+0800: 495840.551: [weak refs processing, 0.0868804 secs]2018-08-06T10:55:39.515+0800: 495840.638: [class unloading, 0.0667963 secs]
+// scrub symbol table
+2018-08-06T10:55:39.582+0800: 495840.705: [scrub symbol table, 0.0554765 secs]2018-08-06T10:55:39.637+0800: 495840.761: [scrub string table, 0.0065050 secs][1 CMS-remark: 1831867K(1966080K)] 2068900K(3027776K), 0.3247966 secs] [Times: user=0.48 sys=0.01, real=0.32 secs] 
+2018-08-06T10:55:39.646+0800: 495840.770: [CMS-concurrent-sweep-start]
+2018-08-06T10:55:48.631+0800: 495849.755: [CMS-concurrent-sweep: 6.052/8.985 secs] [Times: user=7.66 sys=4.13, real=8.99 secs] 
+// reset start
+2018-08-06T10:55:49.130+0800: 495850.253: [CMS-concurrent-reset-start]
+2018-08-06T10:55:49.139+0800: 495850.263: [CMS-concurrent-reset: 0.009/0.009 secs] [Times: user=0.03 sys=0.00, real=0.00 secs] 
+2018-08-06T10:55:53.548+0800: 495854.672: [CMS: 1336369K-&gt;468683K(1966080K), 2.2096604 secs] 2336499K-&gt;468683K(3027776K), [Metaspace: 120912K-&gt;120912K(1165312K)], 2.7556633 secs] [Times: user=2.87 sys=0.01, real=2.75 secs] </code></pre></div>
+<h2 id="知识点">知识点</h2>
+
+<h3 id="cms-阶段">CMS 阶段</h3>
+
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>解释</th>
+<th>stop-the-world</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>CMS Initial Mark</td>
+<td>可达性分析, 标记 GC Roots <code>直接关联</code> 对象</td>
+<td>True</td>
+</tr>
+
+<tr>
+<td>CMS-concurrent-mark</td>
+<td>GC Tracing, 从 GC Roots 开始对堆进行<code>可达性分析</code>, 找出存活对象</td>
+<td>False</td>
+</tr>
+
+<tr>
+<td>CMS-concurrent-preclean</td>
+<td>负责前一个阶段标记了又发生改变的对象标记</td>
+<td>False</td>
+</tr>
+
+<tr>
+<td>CMS-concurrent-abortable-preclean</td>
+<td>尝试着去承担 Final Remark 阶段足够多的工作, 重复的做相同的事情直到 abort 条件</td>
+<td>False</td>
+</tr>
+
+<tr>
+<td>CMS Final Remark</td>
+<td>完成标记整个年老代的所有的存活对象</td>
+<td>True</td>
+</tr>
+
+<tr>
+<td>CMS-concurrent-sweep</td>
+<td>开始移除对象</td>
+<td>False</td>
+</tr>
+
+<tr>
+<td>CMS-concurrent-reset</td>
+<td>重置 CMS 算法内部结构</td>
+<td>False</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="gc-触发条件">GC 触发条件</h3>
+
+<table>
+<thead>
+<tr>
+<th>原因</th>
+<th>说明</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Allocation Failure</td>
+<td>新生代(Young generation)不够空间给创建新对象, 触发 minor gc.</td>
+</tr>
+
+<tr>
+<td>Promotion Failure</td>
+<td>没有 <code>连续</code> 的空间来存放更大的对象. 通常会导致 FGC.</td>
+</tr>
+
+<tr>
+<td>GCLocker Initiated GC</td>
+<td>JNI 临界区被释放就会触发</td>
+</tr>
+
+<tr>
+<td>Concurrent Mode Failure</td>
+<td>CMS 采用多个线程和应用线程并发执行, 减少停顿时间, 通常发生于年老代被用完之前不能完成对无引用对象的回收或者年老代不能满足新的空间分配</td>
+</tr>
+
+<tr>
+<td>Heap Dump Initiated GC</td>
+<td>heap dump 之前进行 FGC , 一般是通过工具 dump 会触发 (jmap)</td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="gc-异常点">GC 异常点</h3>
+
+<p>通过 <a href="gceasy.io">gceasy.io</a> 上传日志, 分析异常点得出</p>
+
+<p><code>It looks like your application is waiting due to lack of compute resources (either CPU or I/O cycles). Serious production applications shouldn't be stranded because of compute resources. In 47 GC event(s), 'real' time took more than 'usr' + 'sys' time.</code></p>
+
+<table>
+<thead>
+<tr>
+<th>Timestamp</th>
+<th>User Time (secs)</th>
+<th>Sys Time (secs)</th>
+<th>Real Time (secs)</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>2018-08-06T10:21:12</td>
+<td>0.26</td>
+<td>0.01</td>
+<td>0.61</td>
+</tr>
+
+<tr>
+<td>2018-08-06T10:21:18</td>
+<td>0.24</td>
+<td>0.04</td>
+<td>0.9</td>
+</tr>
+
+<tr>
+<td>2018-08-06T10:33:25</td>
+<td>0.22</td>
+<td>0.01</td>
+<td>0.58</td>
+</tr>
+
+<tr>
+<td>2018-08-06T10:34:54</td>
+<td>0.3</td>
+<td>0.01</td>
+<td>0.52</td>
+</tr>
+
+<tr>
+<td>2018-08-06T10:35:15</td>
+<td>0.55</td>
+<td>0.02</td>
+<td>1.15</td>
+</tr>
+</tbody>
+</table>
+
+<p>意思就是 &lsquo;real&rsquo; time &gt; &lsquo;usr&rsquo; + &lsquo;sys&rsquo;, 造成这种现象的可能性有</p>
+
+<ol>
+<li>Heavy I/O
+如果有 I/O 密集任务, &lsquo;real time&rsquo; 会变长.
+&gt; 解决方案
+    1. 优化高 I/O 任务
+    1. 在服务器上减少导致高 I/O 的任务
+    1. 迁移应用到低 I/O 的服务器上</li>
+<li>Lack of CPU
+如果是服务器上有多个进程在跑, 程序得不到足够的 CPU 周期, 就会开始等待. 因此 &lsquo;real time&rsquo;会变长
+&gt; 解决方案:
+    1. 减少服务器上的进程
+    1. 增加 CPU
+    1. 迁移应用到充足 CPU 服务器上</li>
+</ol>
+
+<h3 id="现象分析">现象分析</h3>
+
+<p>当时出现的现象是:
+1. CPU 告警
+1. 上去服务器看到系统负载已经到70左右
+1. top 信息看到应用占用 CPU 高
+1. GC 日志显示同一台服务器上的两个服务在10点时间段 CMS 都在工作
+1. 业务高峰期
+1. 4核服务器</p>
+
+<p>初步分析:
+1. 从应用线程dump分析, 应用内线程无明显异常现象.
+1. 结合 top -H 初步得到是 GC 线程在运行
+1. 从 GC log 入手, 分析得出异常点, 回顾与计算两个服务 CMS 线程占用了一半的 CPU 资源 <code>(4+3)/4*2</code>, 导致 CPU 资源紧缺, 整体服务变慢.</p>
+
+<h3 id="参考资料">参考资料</h3>
+
+<ol>
+<li><a href="https://www.cnblogs.com/zhangxiaoguang/p/5792468.html">https://www.cnblogs.com/zhangxiaoguang/p/5792468.html</a></li>
+<li><a href="https://juejin.im/post/5b651200f265da0fa00a38d7?utm_source=gold_browser_extension">https://juejin.im/post/5b651200f265da0fa00a38d7?utm_source=gold_browser_extension</a></li>
+<li><a href="https://stackoverflow.com/questions/22149075/why-promotion-failure-and-concurrent-mode-failure">https://stackoverflow.com/questions/22149075/why-promotion-failure-and-concurrent-mode-failure</a></li>
+<li><a href="https://blog.gceasy.io/2016/12/08/real-time-greater-than-user-and-sys-time/">https://blog.gceasy.io/2016/12/08/real-time-greater-than-user-and-sys-time/</a></li>
+</ol>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

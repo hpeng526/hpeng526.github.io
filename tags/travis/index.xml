@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>travis on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/travis/</link>
+    <description>Recent content in travis on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Thu, 18 Jan 2018 22:10:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/travis/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>travis-ci 部署 hexo</title>
+      <link>https://hpeng526.github.io/posts/18/1801travis-hexo/</link>
+      <pubDate>Thu, 18 Jan 2018 22:10:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/18/1801travis-hexo/</guid>
+      <description>利用 travis-ci 自动生成 hexo 并提交，无非就几点要注意的，一个是 travis-ci 怎么有权限推送，另一个就是 travis-ci 怎么用。 从 .travis.yml 入手 下面是我的配置，很简单。 language: node_js node_js: stable install: - npm install script: -</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>golang on hpeng526</title>
+    <link>https://hpeng526.github.io/tags/golang/</link>
+    <description>Recent content in golang on hpeng526</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Wed, 10 Mar 2021 23:33:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://hpeng526.github.io/tags/golang/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>golang 泛型预览</title>
+      <link>https://hpeng526.github.io/posts/21/2103-go-generic/</link>
+      <pubDate>Wed, 10 Mar 2021 23:33:00 +0000</pubDate>
+      
+      <guid>https://hpeng526.github.io/posts/21/2103-go-generic/</guid>
+      <description>golang 泛型预览 终于，&amp;rdquo;大道至简&amp;rdquo;的go，泛型终于合并到master分支上去了。那么来了，让我们来搞一下 首先需要从源码编译</description>
+    </item>
+    
+  </channel>
+</rss>

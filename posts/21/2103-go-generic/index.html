@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>golang 泛型预览 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="golang 泛型预览"/>
+<meta name="twitter:description" content="golang 泛型预览 终于，&rdquo;大道至简&rdquo;的go，泛型终于合并到master分支上去了。那么来了，让我们来搞一下 首先需要从源码编译"/>
+
+    <meta property="og:title" content="golang 泛型预览" />
+<meta property="og:description" content="golang 泛型预览 终于，&rdquo;大道至简&rdquo;的go，泛型终于合并到master分支上去了。那么来了，让我们来搞一下 首先需要从源码编译" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/21/2103-go-generic/" />
+<meta property="article:published_time" content="2021-03-10T23:33:00+00:00" />
+<meta property="article:modified_time" content="2021-03-10T23:33:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">golang 泛型预览</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Mar 10, 2021
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          3 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/golang/">golang</a><a class="tag" href="https://hpeng526.github.io/tags/generic/">generic</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="golang-泛型预览">golang 泛型预览</h1>
+
+<p>终于，&rdquo;大道至简&rdquo;的go，泛型终于合并到master分支上去了。那么来了，让我们来搞一下</p>
+
+<h2 id="首先需要从源码编译golang">首先需要从源码编译golang</h2>
+
+<p>省略，把CGO禁了就好编译了</p>
+
+<h2 id="写个泛型-max">写个泛型 MAX</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
+
+<span style="color:#ff79c6">import</span> <span style="color:#f1fa8c">&#34;fmt&#34;</span>
+
+<span style="color:#8be9fd;font-style:italic">func</span> gMax[T <span style="color:#8be9fd;font-style:italic">interface</span> {<span style="color:#8be9fd;font-style:italic">type</span> <span style="color:#8be9fd">int</span>, <span style="color:#8be9fd">float64</span>}](a T, b T) T {
+    <span style="color:#ff79c6">if</span> <span style="color:#50fa7b">T</span>(a) &gt; <span style="color:#50fa7b">T</span>(b) {
+        <span style="color:#ff79c6">return</span> <span style="color:#50fa7b">T</span>(a)
+    }
+    <span style="color:#ff79c6">return</span> <span style="color:#50fa7b">T</span>(b)
+}
+
+<span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+    fmt.<span style="color:#50fa7b">Printf</span>(<span style="color:#f1fa8c">&#34;%T=%[1]v\n&#34;</span>, <span style="color:#50fa7b">gMax</span>(<span style="color:#bd93f9">1</span>, <span style="color:#bd93f9">2</span>))
+    fmt.<span style="color:#50fa7b">Printf</span>(<span style="color:#f1fa8c">&#34;%T=%[1]v\n&#34;</span>, <span style="color:#50fa7b">gMax</span>(<span style="color:#bd93f9">1.0</span>, <span style="color:#bd93f9">2.2</span>))
+    fmt.<span style="color:#50fa7b">Printf</span>(<span style="color:#f1fa8c">&#34;%T=%[1]v\n&#34;</span>, gMax[<span style="color:#8be9fd">int</span>](<span style="color:#bd93f9">3.0</span>, <span style="color:#bd93f9">4.0</span>))
+}</code></pre></div>
+<p>运行参数</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">go run -gcflags<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;-G=3&#34;</span> main.go</code></pre></div>
+<p>结果</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#8be9fd;font-style:italic">int</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span>
+<span style="color:#8be9fd;font-style:italic">float64</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">2</span>.2
+<span style="color:#8be9fd;font-style:italic">int</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">4</span></code></pre></div>
+<p><code>-G=3</code> 可以从 <code>go tool compile -help</code> , <code>-G</code> 是 <code>accept generic code</code></p>
+
+<p>这样就能体验go的泛型了</p>
+
+<h2 id="跟java泛型区别-todo">跟java泛型区别 TODO</h2>
+
+<p>把多余的输出干掉，方便看汇编</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#8be9fd;font-style:italic">func</span> <span style="color:#50fa7b">main</span>() {
+    <span style="color:#50fa7b">gMax</span>(<span style="color:#bd93f9">1</span>, <span style="color:#bd93f9">2</span>)
+    <span style="color:#50fa7b">gMax</span>(<span style="color:#bd93f9">1.0</span>, <span style="color:#bd93f9">2.2</span>)
+}</code></pre></div>
+<p>来，编译成汇编</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">go run -gcflags<span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;-G=3 -S&#34;</span> main.go</code></pre></div>
+<p>结果</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="color:#6272a4"># command-line-arguments</span>
+<span style="color:#f1fa8c">&#34;&#34;</span>.main STEXT <span style="color:#8be9fd;font-style:italic">size</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">103</span> <span style="color:#8be9fd;font-style:italic">args</span><span style="color:#ff79c6">=</span>0x0 <span style="color:#8be9fd;font-style:italic">locals</span><span style="color:#ff79c6">=</span>0x20 <span style="color:#8be9fd;font-style:italic">funcid</span><span style="color:#ff79c6">=</span>0x0
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	TEXT	<span style="color:#f1fa8c">&#34;&#34;</span>.main<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>, ABIInternal, <span style="color:#8be9fd;font-style:italic">$32</span>-0
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	MOVQ	<span style="color:#ff79c6">(</span>TLS<span style="color:#ff79c6">)</span>, R14
+	0x0009 <span style="color:#bd93f9">00009</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	CMPQ	SP, <span style="color:#bd93f9">16</span><span style="color:#ff79c6">(</span>R14<span style="color:#ff79c6">)</span>
+	0x000d <span style="color:#bd93f9">00013</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	PCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, <span style="color:#8be9fd;font-style:italic">$-</span><span style="color:#bd93f9">2</span>
+	0x000d <span style="color:#bd93f9">00013</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	JLS	<span style="color:#bd93f9">93</span>
+	0x000f <span style="color:#bd93f9">00015</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	PCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, <span style="color:#8be9fd;font-style:italic">$-</span><span style="color:#bd93f9">1</span>
+	0x000f <span style="color:#bd93f9">00015</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	SUBQ	<span style="color:#8be9fd;font-style:italic">$32</span>, SP
+	0x0013 <span style="color:#bd93f9">00019</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	MOVQ	BP, <span style="color:#bd93f9">24</span><span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x0018 <span style="color:#bd93f9">00024</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	LEAQ	<span style="color:#bd93f9">24</span><span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>, BP
+	0x001d <span style="color:#bd93f9">00029</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	FUNCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, gclocals·33cdeccccebe80329f1fdbee7f5874cb<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x001d <span style="color:#bd93f9">00029</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	FUNCDATA	<span style="color:#8be9fd;font-style:italic">$1</span>, gclocals·33cdeccccebe80329f1fdbee7f5874cb<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x001d <span style="color:#bd93f9">00029</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:11<span style="color:#ff79c6">)</span>	MOVQ	<span style="color:#8be9fd;font-style:italic">$1</span>, <span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x0025 <span style="color:#bd93f9">00037</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:11<span style="color:#ff79c6">)</span>	MOVQ	<span style="color:#8be9fd;font-style:italic">$2</span>, <span style="color:#bd93f9">8</span><span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x002e <span style="color:#bd93f9">00046</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:11<span style="color:#ff79c6">)</span>	PCDATA	<span style="color:#8be9fd;font-style:italic">$1</span>, <span style="color:#8be9fd;font-style:italic">$0</span>
+    <span style="color:#6272a4">## CALL</span>
+	0x002e <span style="color:#bd93f9">00046</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:11<span style="color:#ff79c6">)</span>	CALL	<span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>int<span style="color:#ff79c6">](</span>SB<span style="color:#ff79c6">)</span>
+	0x0033 <span style="color:#bd93f9">00051</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:12<span style="color:#ff79c6">)</span>	MOVSD	<span style="color:#8be9fd;font-style:italic">$f64</span>.3ff0000000000000<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>, X0
+	0x003b <span style="color:#bd93f9">00059</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:12<span style="color:#ff79c6">)</span>	MOVSD	X0, <span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x0040 <span style="color:#bd93f9">00064</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:12<span style="color:#ff79c6">)</span>	MOVSD	<span style="color:#8be9fd;font-style:italic">$f64</span>.400199999999999a<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>, X0
+	0x0048 <span style="color:#bd93f9">00072</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:12<span style="color:#ff79c6">)</span>	MOVSD	X0, <span style="color:#bd93f9">8</span><span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+    <span style="color:#6272a4">## CALL</span>
+	0x004e <span style="color:#bd93f9">00078</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:12<span style="color:#ff79c6">)</span>	CALL	<span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>float64<span style="color:#ff79c6">](</span>SB<span style="color:#ff79c6">)</span>
+	0x0053 <span style="color:#bd93f9">00083</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:13<span style="color:#ff79c6">)</span>	MOVQ	<span style="color:#bd93f9">24</span><span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>, BP
+	0x0058 <span style="color:#bd93f9">00088</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:13<span style="color:#ff79c6">)</span>	ADDQ	<span style="color:#8be9fd;font-style:italic">$32</span>, SP
+	0x005c <span style="color:#bd93f9">00092</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:13<span style="color:#ff79c6">)</span>	RET
+	0x005d <span style="color:#bd93f9">00093</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:13<span style="color:#ff79c6">)</span>	NOP
+	0x005d <span style="color:#bd93f9">00093</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	PCDATA	<span style="color:#8be9fd;font-style:italic">$1</span>, <span style="color:#8be9fd;font-style:italic">$-</span><span style="color:#bd93f9">1</span>
+	0x005d <span style="color:#bd93f9">00093</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	PCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, <span style="color:#8be9fd;font-style:italic">$-</span><span style="color:#bd93f9">2</span>
+	0x005d <span style="color:#bd93f9">00093</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	NOP
+	0x0060 <span style="color:#bd93f9">00096</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	CALL	runtime.morestack_noctxt<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x0065 <span style="color:#bd93f9">00101</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	PCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, <span style="color:#8be9fd;font-style:italic">$-</span><span style="color:#bd93f9">1</span>
+	0x0065 <span style="color:#bd93f9">00101</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:10<span style="color:#ff79c6">)</span>	JMP	<span style="color:#bd93f9">0</span>
+	0x0000 <span style="color:#bd93f9">64</span> 4c 8b <span style="color:#bd93f9">34</span> <span style="color:#bd93f9">25</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">49</span> 3b <span style="color:#bd93f9">66</span> <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">76</span> 4e <span style="color:#bd93f9">48</span>  dL.4%....I;f.vNH
+	0x0010 <span style="color:#bd93f9">83</span> ec <span style="color:#bd93f9">20</span> <span style="color:#bd93f9">48</span> <span style="color:#bd93f9">89</span> 6c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> <span style="color:#bd93f9">48</span> 8d 6c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> <span style="color:#bd93f9">48</span> c7 <span style="color:#bd93f9">04</span>  .. H.l$.H.l$.H..
+	0x0020 <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">01</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">48</span> c7 <span style="color:#bd93f9">44</span> <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">08</span> <span style="color:#bd93f9">02</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> e8 <span style="color:#bd93f9">00</span>  $....H.D$.......
+	0x0030 <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> f2 0f <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">05</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> f2 0f <span style="color:#bd93f9">11</span> <span style="color:#bd93f9">04</span> <span style="color:#bd93f9">24</span>  ...............$
+	0x0040 f2 0f <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">05</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> f2 0f <span style="color:#bd93f9">11</span> <span style="color:#bd93f9">44</span> <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">08</span> e8 <span style="color:#bd93f9">00</span>  ...........D$...
+	0x0050 <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">48</span> 8b 6c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> <span style="color:#bd93f9">48</span> <span style="color:#bd93f9">83</span> c4 <span style="color:#bd93f9">20</span> c3 0f 1f <span style="color:#bd93f9">00</span>  ...H.l$.H.. ....
+	0x0060 e8 <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> <span style="color:#bd93f9">00</span> eb <span style="color:#bd93f9">99</span>                             .......
+	rel <span style="color:#bd93f9">5</span>+4 <span style="color:#8be9fd;font-style:italic">t</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">16</span> TLS+0
+	rel <span style="color:#bd93f9">47</span>+4 <span style="color:#8be9fd;font-style:italic">t</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span> <span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>int<span style="color:#ff79c6">]</span>+0
+	rel <span style="color:#bd93f9">55</span>+4 <span style="color:#8be9fd;font-style:italic">t</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">15</span> <span style="color:#8be9fd;font-style:italic">$f64</span>.3ff0000000000000+0
+	rel <span style="color:#bd93f9">68</span>+4 <span style="color:#8be9fd;font-style:italic">t</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">15</span> <span style="color:#8be9fd;font-style:italic">$f64</span>.400199999999999a+0
+	rel <span style="color:#bd93f9">79</span>+4 <span style="color:#8be9fd;font-style:italic">t</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span> <span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>float64<span style="color:#ff79c6">]</span>+0
+	rel <span style="color:#bd93f9">97</span>+4 <span style="color:#8be9fd;font-style:italic">t</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">7</span> runtime.morestack_noctxt+0
+<span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>int<span style="color:#ff79c6">]</span> STEXT nosplit <span style="color:#8be9fd;font-style:italic">size</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">27</span> <span style="color:#8be9fd;font-style:italic">args</span><span style="color:#ff79c6">=</span>0x18 <span style="color:#8be9fd;font-style:italic">locals</span><span style="color:#ff79c6">=</span>0x0 <span style="color:#8be9fd;font-style:italic">funcid</span><span style="color:#ff79c6">=</span>0x0
+    <span style="color:#6272a4">## 声明</span>
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:3<span style="color:#ff79c6">)</span>	TEXT	<span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>int<span style="color:#ff79c6">](</span>SB<span style="color:#ff79c6">)</span>, NOSPLIT|ABIInternal, <span style="color:#8be9fd;font-style:italic">$0</span>-24
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:3<span style="color:#ff79c6">)</span>	FUNCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, gclocals·33cdeccccebe80329f1fdbee7f5874cb<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:3<span style="color:#ff79c6">)</span>	FUNCDATA	<span style="color:#8be9fd;font-style:italic">$1</span>, gclocals·33cdeccccebe80329f1fdbee7f5874cb<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	MOVQ	<span style="color:#f1fa8c">&#34;&#34;</span>.b+16<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>, AX
+	0x0005 <span style="color:#bd93f9">00005</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	MOVQ	<span style="color:#f1fa8c">&#34;&#34;</span>.a+8<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>, CX
+	0x000a <span style="color:#bd93f9">00010</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	CMPQ	AX, CX
+	0x000d <span style="color:#bd93f9">00013</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	JGE	<span style="color:#bd93f9">21</span>
+	0x000f <span style="color:#bd93f9">00015</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:5<span style="color:#ff79c6">)</span>	MOVQ	CX, <span style="color:#f1fa8c">&#34;&#34;</span>.~r2+24<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x0014 <span style="color:#bd93f9">00020</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:5<span style="color:#ff79c6">)</span>	RET
+	0x0015 <span style="color:#bd93f9">00021</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:7<span style="color:#ff79c6">)</span>	MOVQ	AX, <span style="color:#f1fa8c">&#34;&#34;</span>.~r2+24<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x001a <span style="color:#bd93f9">00026</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:7<span style="color:#ff79c6">)</span>	RET
+	0x0000 <span style="color:#bd93f9">48</span> 8b <span style="color:#bd93f9">44</span> <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">48</span> 8b 4c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">08</span> <span style="color:#bd93f9">48</span> <span style="color:#bd93f9">39</span> c8 7d <span style="color:#bd93f9">06</span> <span style="color:#bd93f9">48</span>  H.D$.H.L$.H9.<span style="color:#ff79c6">}</span>.H
+	0x0010 <span style="color:#bd93f9">89</span> 4c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> c3 <span style="color:#bd93f9">48</span> <span style="color:#bd93f9">89</span> <span style="color:#bd93f9">44</span> <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> c3                 .L$..H.D$..
+<span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>float64<span style="color:#ff79c6">]</span> STEXT nosplit <span style="color:#8be9fd;font-style:italic">size</span><span style="color:#ff79c6">=</span><span style="color:#bd93f9">33</span> <span style="color:#8be9fd;font-style:italic">args</span><span style="color:#ff79c6">=</span>0x18 <span style="color:#8be9fd;font-style:italic">locals</span><span style="color:#ff79c6">=</span>0x0 <span style="color:#8be9fd;font-style:italic">funcid</span><span style="color:#ff79c6">=</span>0x0
+    <span style="color:#6272a4">## 声明</span>
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:3<span style="color:#ff79c6">)</span>	TEXT	<span style="color:#f1fa8c">&#34;&#34;</span>.gMax<span style="color:#ff79c6">[</span>float64<span style="color:#ff79c6">](</span>SB<span style="color:#ff79c6">)</span>, NOSPLIT|ABIInternal, <span style="color:#8be9fd;font-style:italic">$0</span>-24
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:3<span style="color:#ff79c6">)</span>	FUNCDATA	<span style="color:#8be9fd;font-style:italic">$0</span>, gclocals·33cdeccccebe80329f1fdbee7f5874cb<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:3<span style="color:#ff79c6">)</span>	FUNCDATA	<span style="color:#8be9fd;font-style:italic">$1</span>, gclocals·33cdeccccebe80329f1fdbee7f5874cb<span style="color:#ff79c6">(</span>SB<span style="color:#ff79c6">)</span>
+	0x0000 <span style="color:#bd93f9">00000</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	MOVSD	<span style="color:#f1fa8c">&#34;&#34;</span>.a+8<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>, X0
+	0x0006 <span style="color:#bd93f9">00006</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	MOVSD	<span style="color:#f1fa8c">&#34;&#34;</span>.b+16<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>, X1
+	0x000c <span style="color:#bd93f9">00012</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	UCOMISD	X1, X0
+	0x0010 <span style="color:#bd93f9">00016</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:4<span style="color:#ff79c6">)</span>	JLS	<span style="color:#bd93f9">25</span>
+	0x0012 <span style="color:#bd93f9">00018</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:5<span style="color:#ff79c6">)</span>	MOVSD	X0, <span style="color:#f1fa8c">&#34;&#34;</span>.~r2+24<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x0018 <span style="color:#bd93f9">00024</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:5<span style="color:#ff79c6">)</span>	RET
+	0x0019 <span style="color:#bd93f9">00025</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:7<span style="color:#ff79c6">)</span>	MOVSD	X1, <span style="color:#f1fa8c">&#34;&#34;</span>.~r2+24<span style="color:#ff79c6">(</span>SP<span style="color:#ff79c6">)</span>
+	0x001f <span style="color:#bd93f9">00031</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:7<span style="color:#ff79c6">)</span>	NOP
+	0x0020 <span style="color:#bd93f9">00032</span> <span style="color:#ff79c6">(</span>/home/goroot/bin/main.go:7<span style="color:#ff79c6">)</span>	RET
+	0x0000 f2 0f <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">44</span> <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">08</span> f2 0f <span style="color:#bd93f9">10</span> 4c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">10</span> <span style="color:#bd93f9">66</span> 0f 2e c1  ...D$....L$.f...
+	0x0010 <span style="color:#bd93f9">76</span> <span style="color:#bd93f9">07</span> f2 0f <span style="color:#bd93f9">11</span> <span style="color:#bd93f9">44</span> <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> c3 f2 0f <span style="color:#bd93f9">11</span> 4c <span style="color:#bd93f9">24</span> <span style="color:#bd93f9">18</span> <span style="color:#bd93f9">90</span>  v....D$.....L$..
+	0x0020 c3                                               .</code></pre></div>
+<p>emm，跟 Java 类型擦除不一样，go 似乎是通过代码生成来实现泛型的，运行效率可以保证了，编译产物增大也是可以接受吧。</p>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

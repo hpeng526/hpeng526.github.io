@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>RocketMQ 延迟消息 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="RocketMQ 延迟消息"/>
+<meta name="twitter:description" content="什么是延迟消息 (RocketMQ 4.5.1) RocketMq支持的消息类型 Simple Message Order Message (FIFO) Broadcasting Scheduled messages Batch Transaction messages 延迟消息跟普通消息的不一样之处就是, 他们不会立即发送, 而是等到给定时间"/>
+
+    <meta property="og:title" content="RocketMQ 延迟消息" />
+<meta property="og:description" content="什么是延迟消息 (RocketMQ 4.5.1) RocketMq支持的消息类型 Simple Message Order Message (FIFO) Broadcasting Scheduled messages Batch Transaction messages 延迟消息跟普通消息的不一样之处就是, 他们不会立即发送, 而是等到给定时间" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/19/1908-rocketmq2/" />
+<meta property="article:published_time" content="2019-10-01T14:10:00+00:00" />
+<meta property="article:modified_time" content="2019-10-01T14:10:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">RocketMQ 延迟消息</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Oct 1, 2019
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          3 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/java/">Java</a><a class="tag" href="https://hpeng526.github.io/tags/rocketmq/">RocketMQ</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h1 id="什么是延迟消息-rocketmq-4-5-1">什么是延迟消息 (RocketMQ 4.5.1)</h1>
+
+<h2 id="rocketmq支持的消息类型">RocketMq支持的消息类型</h2>
+
+<ol>
+<li>Simple Message</li>
+<li>Order Message (FIFO)</li>
+<li>Broadcasting</li>
+<li><strong>Scheduled messages</strong></li>
+<li>Batch</li>
+<li>Transaction messages</li>
+</ol>
+
+<p>延迟消息跟普通消息的不一样之处就是, 他们不会立即发送, 而是等到给定时间后才投递</p>
+
+<!-- more -->
+
+<h2 id="如何使用延迟消息">如何使用延迟消息</h2>
+
+<p>从官网给出的例子看, 只需要设置消息属性<code>delayTimeLevel</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">import org.<span style="color:#50fa7b">apache</span>.<span style="color:#50fa7b">rocketmq</span>.<span style="color:#50fa7b">client</span>.<span style="color:#50fa7b">producer</span>.<span style="color:#50fa7b">DefaultMQProducer</span>;
+import org.<span style="color:#50fa7b">apache</span>.<span style="color:#50fa7b">rocketmq</span>.<span style="color:#50fa7b">common</span>.<span style="color:#50fa7b">message</span>.<span style="color:#50fa7b">Message</span>;
+
+public class ScheduledMessageProducer {
+
+    public static void main(String[] args) throws Exception {
+        <span style="color:#6272a4">// Instantiate a producer to send scheduled messages
+</span><span style="color:#6272a4"></span>        DefaultMQProducer producer <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> DefaultMQProducer(<span style="color:#f1fa8c">&#34;ExampleProducerGroup&#34;</span>);
+        <span style="color:#6272a4">// Launch producer
+</span><span style="color:#6272a4"></span>        producer.<span style="color:#50fa7b">start</span>();
+        int totalMessagesToSend <span style="color:#ff79c6">=</span> 100;
+        <span style="color:#ff79c6">for</span> (int i <span style="color:#ff79c6">=</span> 0; i <span style="color:#ff79c6">&lt;</span> totalMessagesToSend; i<span style="color:#ff79c6">++</span>) {
+            Message message <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Message(<span style="color:#f1fa8c">&#34;TestTopic&#34;</span>, (<span style="color:#f1fa8c">&#34;Hello scheduled message &#34;</span> <span style="color:#ff79c6">+</span> i).<span style="color:#50fa7b">getBytes</span>());
+            <span style="color:#6272a4">// This message will be delivered to consumer 10 seconds later.
+</span><span style="color:#6272a4"></span>            message.<span style="color:#50fa7b">setDelayTimeLevel</span>(3);
+            <span style="color:#6272a4">// Send the message
+</span><span style="color:#6272a4"></span>            producer.<span style="color:#50fa7b">send</span>(message);
+        }
+        <span style="color:#6272a4">// Shutdown producer after use.
+</span><span style="color:#6272a4"></span>        producer.<span style="color:#50fa7b">shutdown</span>();
+    }
+}</code></pre></div>
+<h2 id="rocketmq-内部是怎么实现的">RocketMQ 内部是怎么实现的</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// DefaultMQProducerImpl#sendKernelImpl
+</span><span style="color:#6272a4"></span><span style="color:#ff79c6">if</span> (msg.<span style="color:#50fa7b">getProperty</span>(<span style="color:#f1fa8c">&#34;__STARTDELIVERTIME&#34;</span>) <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">||</span> msg.<span style="color:#50fa7b">getProperty</span>(MessageConst.<span style="color:#50fa7b">PROPERTY_DELAY_TIME_LEVEL</span>) <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+    <span style="color:#6272a4">// 标识为延迟消息
+</span><span style="color:#6272a4"></span>    context.<span style="color:#50fa7b">setMsgType</span>(MessageType.<span style="color:#50fa7b">Delay_Msg</span>);
+}</code></pre></div>
+<p>发送前判定是否含有属性值, 如果有, 设置为延迟消息的消息类型<code>MessageType.Delay_Msg</code></p>
+
+<p>BrokerController 启动会调用 ScheduleMessageService#start</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public void start() {
+    <span style="color:#ff79c6">if</span> (started.<span style="color:#50fa7b">compareAndSet</span>(<span style="color:#ff79c6">false</span>, <span style="color:#ff79c6">true</span>)) {
+        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">timer</span> <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Timer(<span style="color:#f1fa8c">&#34;ScheduleMessageTimerThread&#34;</span>, <span style="color:#ff79c6">true</span>);
+        <span style="color:#ff79c6">for</span> (Map.<span style="color:#50fa7b">Entry</span><span style="color:#ff79c6">&lt;</span>Integer, Long&gt; entry <span style="color:#ff79c6">:</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevelTable</span>.<span style="color:#50fa7b">entrySet</span>()) {
+            Integer level <span style="color:#ff79c6">=</span> entry.<span style="color:#50fa7b">getKey</span>();
+            Long timeDelay <span style="color:#ff79c6">=</span> entry.<span style="color:#50fa7b">getValue</span>();
+            Long offset <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">offsetTable</span>.<span style="color:#50fa7b">get</span>(level);
+            <span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">null</span> <span style="color:#ff79c6">==</span> offset) {
+                offset <span style="color:#ff79c6">=</span> 0L;
+            }
+
+            <span style="color:#ff79c6">if</span> (timeDelay <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">timer</span>.<span style="color:#50fa7b">schedule</span>(<span style="color:#ff79c6">new</span> DeliverDelayedMessageTimerTask(level, offset), FIRST_DELAY_TIME);
+            }
+        }
+
+        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">timer</span>.<span style="color:#50fa7b">scheduleAtFixedRate</span>(<span style="color:#ff79c6">new</span> TimerTask() {
+
+            @Override
+            public void run() {
+                <span style="color:#ff79c6">try</span> {
+                    <span style="color:#ff79c6">if</span> (started.<span style="color:#50fa7b">get</span>()) ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">persist</span>();
+                } <span style="color:#ff79c6">catch</span> (Throwable e) {
+                    log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;scheduleAtFixedRate flush exception&#34;</span>, e);
+                }
+            }
+        }, 10000, <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMessageStore</span>.<span style="color:#50fa7b">getMessageStoreConfig</span>().<span style="color:#50fa7b">getFlushDelayOffsetInterval</span>());
+    }
+}</code></pre></div>
+<ol>
+<li>根据配置的delayLevelTable, 创建 Timer 添加 TimerTask.</li>
+<li><code>DeliverDelayedMessageTimerTask</code>
+
+<ul>
+<li>level对应延迟等级, offset 是已经转化成普通消息的偏移量</li>
+</ul></li>
+<li><code>ScheduleMessageService.this.persist()</code> 10s</li>
+</ol>
+
+<h3 id="deliverdelayedmessagetimertask">DeliverDelayedMessageTimerTask</h3>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public void executeOnTimeup() {
+    <span style="color:#6272a4">// 读取队列 SCHEDULE_TOPIC_XXXX,
+</span><span style="color:#6272a4"></span>    ConsumeQueue cq <span style="color:#ff79c6">=</span>
+        ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMessageStore</span>.<span style="color:#50fa7b">findConsumeQueue</span>(SCHEDULE_TOPIC,
+            delayLevel2QueueId(delayLevel));
+
+    long failScheduleOffset <span style="color:#ff79c6">=</span> offset;
+
+    <span style="color:#ff79c6">if</span> (cq <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+        SelectMappedBufferResult bufferCQ <span style="color:#ff79c6">=</span> cq.<span style="color:#50fa7b">getIndexBuffer</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">offset</span>);
+        <span style="color:#ff79c6">if</span> (bufferCQ <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+            <span style="color:#ff79c6">try</span> {
+                long nextOffset <span style="color:#ff79c6">=</span> offset;
+                int i <span style="color:#ff79c6">=</span> 0;
+                ConsumeQueueExt.CqExtUnit cqExtUnit <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ConsumeQueueExt.<span style="color:#50fa7b">CqExtUnit</span>();
+                <span style="color:#6272a4">// 读延迟消息
+</span><span style="color:#6272a4"></span>                <span style="color:#ff79c6">for</span> (; i <span style="color:#ff79c6">&lt;</span> bufferCQ.<span style="color:#50fa7b">getSize</span>(); i <span style="color:#ff79c6">+=</span> ConsumeQueue.<span style="color:#50fa7b">CQ_STORE_UNIT_SIZE</span>) {
+                    long offsetPy <span style="color:#ff79c6">=</span> bufferCQ.<span style="color:#50fa7b">getByteBuffer</span>().<span style="color:#50fa7b">getLong</span>();
+                    int sizePy <span style="color:#ff79c6">=</span> bufferCQ.<span style="color:#50fa7b">getByteBuffer</span>().<span style="color:#50fa7b">getInt</span>();
+                    long tagsCode <span style="color:#ff79c6">=</span> bufferCQ.<span style="color:#50fa7b">getByteBuffer</span>().<span style="color:#50fa7b">getLong</span>();
+
+                    <span style="color:#ff79c6">if</span> (cq.<span style="color:#50fa7b">isExtAddr</span>(tagsCode)) {
+                        <span style="color:#ff79c6">if</span> (cq.<span style="color:#50fa7b">getExt</span>(tagsCode, cqExtUnit)) {
+                            tagsCode <span style="color:#ff79c6">=</span> cqExtUnit.<span style="color:#50fa7b">getTagsCode</span>();
+                        } <span style="color:#ff79c6">else</span> {
+                            <span style="color:#6272a4">//can&#39;t find ext content.So re compute tags code.
+</span><span style="color:#6272a4"></span>                            log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;[BUG] can&#39;t find consume queue extend file content!addr={}, offsetPy={}, sizePy={}&#34;</span>,
+                                tagsCode, offsetPy, sizePy);
+                            long msgStoreTime <span style="color:#ff79c6">=</span> defaultMessageStore.<span style="color:#50fa7b">getCommitLog</span>().<span style="color:#50fa7b">pickupStoreTimestamp</span>(offsetPy, sizePy);
+                            tagsCode <span style="color:#ff79c6">=</span> computeDeliverTimestamp(delayLevel, msgStoreTime);
+                        }
+                    }
+
+                    long now <span style="color:#ff79c6">=</span> System.<span style="color:#50fa7b">currentTimeMillis</span>();
+                    <span style="color:#6272a4">// 投递时间
+</span><span style="color:#6272a4"></span>                    long deliverTimestamp <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">correctDeliverTimestamp</span>(now, tagsCode);
+
+                    nextOffset <span style="color:#ff79c6">=</span> offset <span style="color:#ff79c6">+</span> (i <span style="color:#ff79c6">/</span> ConsumeQueue.<span style="color:#50fa7b">CQ_STORE_UNIT_SIZE</span>);
+
+                    <span style="color:#6272a4">// 计算是否需要处理
+</span><span style="color:#6272a4"></span>                    long countdown <span style="color:#ff79c6">=</span> deliverTimestamp <span style="color:#ff79c6">-</span> now;
+
+                    <span style="color:#ff79c6">if</span> (countdown <span style="color:#ff79c6">&lt;=</span> 0) {
+                        MessageExt msgExt <span style="color:#ff79c6">=</span>
+                            ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">defaultMessageStore</span>.<span style="color:#50fa7b">lookMessageByOffset</span>(
+                                offsetPy, sizePy);
+
+                        <span style="color:#ff79c6">if</span> (msgExt <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                            <span style="color:#ff79c6">try</span> {
+                                <span style="color:#6272a4">// 还原普通消息
+</span><span style="color:#6272a4"></span>                                <span style="color:#6272a4">// 跟事物消息差不多. 还原真实的topic,清除延迟消息特殊属性
+</span><span style="color:#6272a4"></span>                                MessageExtBrokerInner msgInner <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">messageTimeup</span>(msgExt);
+                                <span style="color:#6272a4">// 剩下的走普通消息逻辑
+</span><span style="color:#6272a4"></span>                                PutMessageResult putMessageResult <span style="color:#ff79c6">=</span>
+                                    ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">writeMessageStore</span>
+                                        .<span style="color:#50fa7b">putMessage</span>(msgInner);
+
+                                <span style="color:#ff79c6">if</span> (putMessageResult <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>
+                                    <span style="color:#ff79c6">&amp;&amp;</span> putMessageResult.<span style="color:#50fa7b">getPutMessageStatus</span>() <span style="color:#ff79c6">==</span> PutMessageStatus.<span style="color:#50fa7b">PUT_OK</span>) {
+                                    <span style="color:#ff79c6">continue</span>;
+                                } <span style="color:#ff79c6">else</span> {
+                                    <span style="color:#6272a4">// XXX: warn and notify me
+</span><span style="color:#6272a4"></span>                                    log.<span style="color:#50fa7b">error</span>(
+                                        <span style="color:#f1fa8c">&#34;ScheduleMessageService, a message time up, but reput it failed, topic: {} msgId {}&#34;</span>,
+                                        msgExt.<span style="color:#50fa7b">getTopic</span>(), msgExt.<span style="color:#50fa7b">getMsgId</span>());
+                                    ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">timer</span>.<span style="color:#50fa7b">schedule</span>(
+                                        <span style="color:#ff79c6">new</span> DeliverDelayedMessageTimerTask(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>,
+                                            nextOffset), DELAY_FOR_A_PERIOD);
+                                    ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">updateOffset</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>,
+                                        nextOffset);
+                                    <span style="color:#ff79c6">return</span>;
+                                }
+                            } <span style="color:#ff79c6">catch</span> (Exception e) {
+                                <span style="color:#6272a4">/*
+</span><span style="color:#6272a4">                                    * XXX: warn and notify me
+</span><span style="color:#6272a4">
+</span><span style="color:#6272a4">
+</span><span style="color:#6272a4">
+</span><span style="color:#6272a4">                                    */</span>
+                                log.<span style="color:#50fa7b">error</span>(
+                                    <span style="color:#f1fa8c">&#34;ScheduleMessageService, messageTimeup execute error, drop it. msgExt=&#34;</span>
+                                        <span style="color:#ff79c6">+</span> msgExt <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;, nextOffset=&#34;</span> <span style="color:#ff79c6">+</span> nextOffset <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;,offsetPy=&#34;</span>
+                                        <span style="color:#ff79c6">+</span> offsetPy <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;,sizePy=&#34;</span> <span style="color:#ff79c6">+</span> sizePy, e);
+                            }
+                        }
+                    } <span style="color:#ff79c6">else</span> {
+                        ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">timer</span>.<span style="color:#50fa7b">schedule</span>(
+                            <span style="color:#ff79c6">new</span> DeliverDelayedMessageTimerTask(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>, nextOffset),
+                            countdown);
+                        ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">updateOffset</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>, nextOffset);
+                        <span style="color:#ff79c6">return</span>;
+                    }
+                } <span style="color:#6272a4">// end of for
+</span><span style="color:#6272a4"></span>
+                <span style="color:#6272a4">// 计算下次的偏移量
+</span><span style="color:#6272a4"></span>                nextOffset <span style="color:#ff79c6">=</span> offset <span style="color:#ff79c6">+</span> (i <span style="color:#ff79c6">/</span> ConsumeQueue.<span style="color:#50fa7b">CQ_STORE_UNIT_SIZE</span>);
+                ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">timer</span>.<span style="color:#50fa7b">schedule</span>(<span style="color:#ff79c6">new</span> DeliverDelayedMessageTimerTask(
+                    <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>, nextOffset), DELAY_FOR_A_WHILE);
+                <span style="color:#6272a4">// 更新偏移量缓存表 `offsetTable`
+</span><span style="color:#6272a4"></span>                ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">updateOffset</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>, nextOffset);
+                <span style="color:#ff79c6">return</span>;
+            } <span style="color:#ff79c6">finally</span> {
+
+                bufferCQ.<span style="color:#50fa7b">release</span>();
+            }
+        } <span style="color:#6272a4">// end of if (bufferCQ != null)
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">else</span> {
+
+            long cqMinOffset <span style="color:#ff79c6">=</span> cq.<span style="color:#50fa7b">getMinOffsetInQueue</span>();
+            <span style="color:#ff79c6">if</span> (offset <span style="color:#ff79c6">&lt;</span> cqMinOffset) {
+                failScheduleOffset <span style="color:#ff79c6">=</span> cqMinOffset;
+                log.<span style="color:#50fa7b">error</span>(<span style="color:#f1fa8c">&#34;schedule CQ offset invalid. offset=&#34;</span> <span style="color:#ff79c6">+</span> offset <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;, cqMinOffset=&#34;</span>
+                    <span style="color:#ff79c6">+</span> cqMinOffset <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;, queueId=&#34;</span> <span style="color:#ff79c6">+</span> cq.<span style="color:#50fa7b">getQueueId</span>());
+            }
+        }
+    } <span style="color:#6272a4">// end of if (cq != null)
+</span><span style="color:#6272a4"></span>
+    ScheduleMessageService.<span style="color:#50fa7b">this</span>.<span style="color:#50fa7b">timer</span>.<span style="color:#50fa7b">schedule</span>(<span style="color:#ff79c6">new</span> DeliverDelayedMessageTimerTask(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">delayLevel</span>,
+        failScheduleOffset), DELAY_FOR_A_WHILE);
+}</code></pre></div>
+<ul>
+<li>根据不同延迟级别读取延迟消息</li>
+<li>获取此级别的偏移量</li>
+<li>还原普通消息(与事务消息差不多. 清除特定标识, 还原真实topic), 走普通消息逻辑</li>
+<li>修改保存偏移量, 创建新 TimeTask</li>
+</ul>
+
+<h3 id="schedulemessageservice-this-persist">ScheduleMessageService.this.persist()</h3>
+
+<p>持久化<code>ScheduleMessageService</code>相关进度到磁盘</p>
+
+<h2 id="broker">broker</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public PutMessageResult putMessage(final MessageExtBrokerInner msg) {
+    <span style="color:#6272a4">// Set the storage time
+</span><span style="color:#6272a4"></span>    msg.<span style="color:#50fa7b">setStoreTimestamp</span>(System.<span style="color:#50fa7b">currentTimeMillis</span>());
+    <span style="color:#6272a4">// Set the message body BODY CRC (consider the most appropriate setting
+</span><span style="color:#6272a4"></span>    <span style="color:#6272a4">// on the client)
+</span><span style="color:#6272a4"></span>    msg.<span style="color:#50fa7b">setBodyCRC</span>(UtilAll.<span style="color:#50fa7b">crc32</span>(msg.<span style="color:#50fa7b">getBody</span>()));
+    <span style="color:#6272a4">// Back to Results
+</span><span style="color:#6272a4"></span>    AppendMessageResult result <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">null</span>;
+
+    StoreStatsService storeStatsService <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMessageStore</span>.<span style="color:#50fa7b">getStoreStatsService</span>();
+
+    String topic <span style="color:#ff79c6">=</span> msg.<span style="color:#50fa7b">getTopic</span>();
+    int queueId <span style="color:#ff79c6">=</span> msg.<span style="color:#50fa7b">getQueueId</span>();
+
+    final int tranType <span style="color:#ff79c6">=</span> MessageSysFlag.<span style="color:#50fa7b">getTransactionValue</span>(msg.<span style="color:#50fa7b">getSysFlag</span>());
+    <span style="color:#ff79c6">if</span> (tranType <span style="color:#ff79c6">==</span> MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_NOT_TYPE</span>
+        <span style="color:#ff79c6">||</span> tranType <span style="color:#ff79c6">==</span> MessageSysFlag.<span style="color:#50fa7b">TRANSACTION_COMMIT_TYPE</span>) {
+        <span style="color:#6272a4">// 如果是commit的事务消息
+</span><span style="color:#6272a4"></span>        <span style="color:#6272a4">// Delay Delivery
+</span><span style="color:#6272a4"></span>        <span style="color:#ff79c6">if</span> (msg.<span style="color:#50fa7b">getDelayTimeLevel</span>() <span style="color:#ff79c6">&gt;</span> 0) {
+            <span style="color:#ff79c6">if</span> (msg.<span style="color:#50fa7b">getDelayTimeLevel</span>() <span style="color:#ff79c6">&gt;</span> <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMessageStore</span>.<span style="color:#50fa7b">getScheduleMessageService</span>().<span style="color:#50fa7b">getMaxDelayLevel</span>()) {
+                msg.<span style="color:#50fa7b">setDelayTimeLevel</span>(<span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">defaultMessageStore</span>.<span style="color:#50fa7b">getScheduleMessageService</span>().<span style="color:#50fa7b">getMaxDelayLevel</span>());
+            }
+            <span style="color:#6272a4">// 设置延迟消息topic
+</span><span style="color:#6272a4"></span>            topic <span style="color:#ff79c6">=</span> ScheduleMessageService.<span style="color:#50fa7b">SCHEDULE_TOPIC</span>;
+            queueId <span style="color:#ff79c6">=</span> ScheduleMessageService.<span style="color:#50fa7b">delayLevel2QueueId</span>(msg.<span style="color:#50fa7b">getDelayTimeLevel</span>());
+            <span style="color:#6272a4">// 备份真实topic queueId
+</span><span style="color:#6272a4"></span>            <span style="color:#6272a4">// Backup real topic, queueId
+</span><span style="color:#6272a4"></span>            MessageAccessor.<span style="color:#50fa7b">putProperty</span>(msg, MessageConst.<span style="color:#50fa7b">PROPERTY_REAL_TOPIC</span>, msg.<span style="color:#50fa7b">getTopic</span>());
+            MessageAccessor.<span style="color:#50fa7b">putProperty</span>(msg, MessageConst.<span style="color:#50fa7b">PROPERTY_REAL_QUEUE_ID</span>, String.<span style="color:#50fa7b">valueOf</span>(msg.<span style="color:#50fa7b">getQueueId</span>()));
+            msg.<span style="color:#50fa7b">setPropertiesString</span>(MessageDecoder.<span style="color:#50fa7b">messageProperties2String</span>(msg.<span style="color:#50fa7b">getProperties</span>()));
+
+            msg.<span style="color:#50fa7b">setTopic</span>(topic);
+            msg.<span style="color:#50fa7b">setQueueId</span>(queueId);
+        }
+    }</code></pre></div>
+<ul>
+<li>备份真实topic</li>
+<li>保存到特殊的延迟消息topic里 <code>SCHEDULE_TOPIC_XXXX</code></li>
+</ul>
+
+<h2 id="总结">总结</h2>
+
+<ol>
+<li>延迟消息保存在<code>SCHEDULE_TOPIC_XXX</code>中</li>
+<li>延迟粒度对应是queueId</li>
+</ol>
+
+<h2 id="问题">问题</h2>
+
+<p>RocketMq 使用一个Timer处理延迟消息有个缺陷, Timer 是单线程处理的, 如果处理调用卡了, 就会有高延迟发生, 延迟消息就非常的延迟&hellip;</p>
+
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

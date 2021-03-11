@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>Java CAS // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Java CAS"/>
+<meta name="twitter:description" content="CAS 是什么? 简单点讲, compare and swap (CAS) 是原子操作的一种, 可用于多线程编程中实现不被打断的数据交换操作, 解决数据不一致的问题. 大致的过程 &gt; 假设内存有个数"/>
+
+    <meta property="og:title" content="Java CAS" />
+<meta property="og:description" content="CAS 是什么? 简单点讲, compare and swap (CAS) 是原子操作的一种, 可用于多线程编程中实现不被打断的数据交换操作, 解决数据不一致的问题. 大致的过程 &gt; 假设内存有个数" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/18/1806cas/" />
+<meta property="article:published_time" content="2018-06-11T23:10:00+00:00" />
+<meta property="article:modified_time" content="2018-06-11T23:10:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">Java CAS</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          Jun 11, 2018
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          2 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/java/">Java</a><a class="tag" href="https://hpeng526.github.io/tags/cas/">CAS</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<h2 id="cas-https-en-wikipedia-org-wiki-compare-and-swap-是什么"><a href="https://en.wikipedia.org/wiki/Compare-and-swap">CAS</a> 是什么?</h2>
+
+<p>简单点讲, compare and swap (CAS) 是原子操作的一种, 可用于多线程编程中实现不被打断的数据交换操作, 解决数据不一致的问题.</p>
+
+<p>大致的过程
+&gt; 假设内存有个数值 Value, 旧的数值记录为 Old, 需要修改的值是 New
+&gt; 1. 比较 Value 是否等于 Old (compare)
+&gt; 1. 如果相等, New 写入 Value (swap, 如果内存数据没有被修改过)
+&gt; 1. 返回操作是否成功</p>
+
+<p>从上面简要的过程, 可以很简单的看出, CAS有个ABA问题.
+&gt; 就是当一个值从A-&gt;B-&gt;A, 然后使用CAS操作, 发现跟记录的Old数值一样, 没有变化, 则会认为他没有改变, 因此会导致错误的结果.</p>
+
+<!-- more -->
+
+<h2 id="从-java-的-atomicinteger-java-入手">从 Java 的 AtomicInteger.java 入手</h2>
+
+<p>源码 (Java 10)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class AtomicInteger extends Number implements java.<span style="color:#50fa7b">io</span>.<span style="color:#50fa7b">Serializable</span> {
+    private static final long serialVersionUID <span style="color:#ff79c6">=</span> 6214790243416807050L;
+
+    <span style="color:#6272a4">/*
+</span><span style="color:#6272a4">     * This class intended to be implemented using VarHandles, but there
+</span><span style="color:#6272a4">     * are unresolved cyclic startup dependencies.
+</span><span style="color:#6272a4">     */</span>
+    <span style="color:#6272a4">// 获取 Unsafe 的实例
+</span><span style="color:#6272a4"></span>    private static final jdk.<span style="color:#50fa7b">internal</span>.<span style="color:#50fa7b">misc</span>.<span style="color:#50fa7b">Unsafe</span> U <span style="color:#ff79c6">=</span> jdk.<span style="color:#50fa7b">internal</span>.<span style="color:#50fa7b">misc</span>.<span style="color:#50fa7b">Unsafe</span>.<span style="color:#50fa7b">getUnsafe</span>();
+    <span style="color:#6272a4">// AtomicInteger 内 value 在内存里面的偏移量
+</span><span style="color:#6272a4"></span>    private static final long VALUE <span style="color:#ff79c6">=</span> U.<span style="color:#50fa7b">objectFieldOffset</span>(AtomicInteger.<span style="color:#50fa7b">class</span>, <span style="color:#f1fa8c">&#34;value&#34;</span>);
+    <span style="color:#6272a4">// 上面提到的 value
+</span><span style="color:#6272a4"></span>    private volatile int value;
+
+    <span style="color:#6272a4">/* ignore **/</span>
+
+    public final int incrementAndGet() {
+        <span style="color:#ff79c6">return</span> U.<span style="color:#50fa7b">getAndAddInt</span>(<span style="color:#ff79c6">this</span>, VALUE, 1) <span style="color:#ff79c6">+</span> 1;
+    }
+    <span style="color:#6272a4">/* ignore **/</span>
+}</code></pre></div>
+<p>可以看到, 主要是调用 <code>getAndAddInt</code> 方法.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">@HotSpotIntrinsicCandidate
+public final int getAndAddInt(Object o, long offset, int delta) {
+    int v;
+    <span style="color:#ff79c6">do</span> {
+        v <span style="color:#ff79c6">=</span> getIntVolatile(o, offset);
+    } <span style="color:#ff79c6">while</span> (<span style="color:#ff79c6">!</span>weakCompareAndSetInt(o, offset, v, v <span style="color:#ff79c6">+</span> delta));
+    <span style="color:#ff79c6">return</span> v;
+}</code></pre></div>
+<p>跟到最后, 是调用一个native方法
+<code>public final native boolean compareAndSetInt(Object o, long offset,int expected,int x);</code></p>
+
+<p>到此就看完了. (不深入jdk)
+其实, 底层是依靠CPU(多核心)硬件层提供的lock信号保证原子性.</p>
+
+<p>那么, 我们回到 <code>This class intended to be implemented using VarHandles, but there are unresolved cyclic startup dependencies.</code> 这句注释. 现在就用VarHandles实现 AtomicInteger. 因为我们自己实现的, 不存在<code>cyclic startup dependencies</code></p>
+
+<h2 id="atomicint">AtomicInt</h2>
+
+<p>简单只实(chao)现(xi)两个方法吧.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">public class AtomicInt {
+
+    private static final VarHandle VH_VALUE_FIELD;
+
+    <span style="color:#8be9fd;font-style:italic">static</span> {
+        <span style="color:#ff79c6">try</span> {
+            VH_VALUE_FIELD <span style="color:#ff79c6">=</span> MethodHandles.<span style="color:#50fa7b">lookup</span>().<span style="color:#50fa7b">in</span>(AtomicInt.<span style="color:#50fa7b">class</span>).<span style="color:#50fa7b">findVarHandle</span>(AtomicInt.<span style="color:#50fa7b">class</span>, <span style="color:#f1fa8c">&#34;value&#34;</span>, <span style="color:#8be9fd">int</span>.<span style="color:#50fa7b">class</span>);
+        } <span style="color:#ff79c6">catch</span> (Exception e) {
+            <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> Error(e);
+        }
+    }
+
+    private volatile int value;
+
+    public AtomicInt() {
+    }
+
+    public AtomicInt(int value) {
+        <span style="color:#ff79c6">this</span>.<span style="color:#50fa7b">value</span> <span style="color:#ff79c6">=</span> value;
+    }
+
+    public final int get() {
+        <span style="color:#ff79c6">return</span> value;
+    }
+
+    public final void set(int newValue) {
+        value <span style="color:#ff79c6">=</span> newValue;
+    }
+
+    public final int getAndIncrement() {
+        <span style="color:#ff79c6">return</span> (<span style="color:#8be9fd">int</span>) VH_VALUE_FIELD.<span style="color:#50fa7b">getAndAdd</span>(<span style="color:#ff79c6">this</span>, 1);
+    }
+
+    public final int incrementAndGet() {
+        <span style="color:#ff79c6">return</span> (<span style="color:#8be9fd">int</span>) VH_VALUE_FIELD.<span style="color:#50fa7b">getAndAdd</span>(<span style="color:#ff79c6">this</span>, 1) <span style="color:#ff79c6">+</span> 1;
+    }
+}</code></pre></div>
+<p>简单的测试用例</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-groovy" data-lang="groovy"><span style="color:#8be9fd;font-style:italic">class</span> <span style="color:#50fa7b">AtomicIntTest</span> <span style="color:#8be9fd;font-style:italic">extends</span> Specification <span style="color:#ff79c6">{</span>
+
+    <span style="color:#8be9fd">def</span> <span style="color:#f1fa8c">&#34;GetAndIncrement&#34;</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+        <span style="color:#8be9fd;font-style:italic">setup:</span>
+        <span style="color:#8be9fd">def</span> atomicInt <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> AtomicInt<span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span>
+
+        <span style="color:#8be9fd;font-style:italic">expect:</span>
+        atomicInt<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getAndIncrement</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span>
+
+    <span style="color:#ff79c6">}</span>
+
+    <span style="color:#8be9fd">def</span> <span style="color:#f1fa8c">&#34;IncrementAndGet&#34;</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+        <span style="color:#8be9fd;font-style:italic">setup:</span>
+        <span style="color:#8be9fd">def</span> atomicInt <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> AtomicInt<span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span>
+
+        <span style="color:#8be9fd;font-style:italic">expect:</span>
+        atomicInt<span style="color:#ff79c6">.</span><span style="color:#50fa7b">incrementAndGet</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">1</span>
+    <span style="color:#ff79c6">}</span>
+
+    <span style="color:#8be9fd">def</span> <span style="color:#f1fa8c">&#34;parallel IncrementAndGet&#34;</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+        <span style="color:#8be9fd;font-style:italic">setup:</span>
+        <span style="color:#8be9fd">def</span> atomicInt <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> AtomicInt<span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">)</span>
+        <span style="color:#8be9fd">def</span> threads <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">..&lt;</span><span style="color:#bd93f9">10</span><span style="color:#ff79c6">).</span><span style="color:#50fa7b">collect</span><span style="color:#ff79c6">({</span>
+            <span style="color:#ff79c6">new</span> <span style="color:#50fa7b">Thread</span><span style="color:#ff79c6">({</span>
+                <span style="color:#ff79c6">for</span> <span style="color:#ff79c6">(</span><span style="color:#8be9fd">int</span> i <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span><span style="color:#ff79c6">;</span> i <span style="color:#ff79c6">&lt;</span> <span style="color:#bd93f9">100</span><span style="color:#ff79c6">;</span> i<span style="color:#ff79c6">++)</span> <span style="color:#ff79c6">{</span>
+                    atomicInt<span style="color:#ff79c6">.</span><span style="color:#50fa7b">incrementAndGet</span><span style="color:#ff79c6">()</span>
+                <span style="color:#ff79c6">}</span>
+            <span style="color:#ff79c6">})</span>
+        <span style="color:#ff79c6">})</span>
+
+        <span style="color:#8be9fd;font-style:italic">expect:</span>
+        atomicInt<span style="color:#ff79c6">.</span><span style="color:#50fa7b">get</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span>
+        threads<span style="color:#ff79c6">.</span><span style="color:#50fa7b">size</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">10</span>
+
+        <span style="color:#8be9fd;font-style:italic">when:</span>
+        threads<span style="color:#ff79c6">.</span><span style="color:#50fa7b">each</span> <span style="color:#ff79c6">{</span> it<span style="color:#ff79c6">.</span><span style="color:#50fa7b">start</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">}</span>
+        threads<span style="color:#ff79c6">.</span><span style="color:#50fa7b">each</span> <span style="color:#ff79c6">{</span> it<span style="color:#ff79c6">.</span><span style="color:#50fa7b">join</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">}</span>
+
+        <span style="color:#8be9fd;font-style:italic">then:</span>
+        atomicInt<span style="color:#ff79c6">.</span><span style="color:#50fa7b">get</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">1000</span>
+    <span style="color:#ff79c6">}</span>
+
+    <span style="color:#8be9fd">def</span> <span style="color:#f1fa8c">&#34;parallel simple int&#34;</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">{</span>
+        <span style="color:#8be9fd;font-style:italic">setup:</span>
+        <span style="color:#8be9fd">def</span> simpleInt <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span>
+        <span style="color:#8be9fd">def</span> threads <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">(</span><span style="color:#bd93f9">0</span><span style="color:#ff79c6">..&lt;</span><span style="color:#bd93f9">10</span><span style="color:#ff79c6">).</span><span style="color:#50fa7b">collect</span><span style="color:#ff79c6">({</span>
+            <span style="color:#ff79c6">new</span> <span style="color:#50fa7b">Thread</span><span style="color:#ff79c6">({</span>
+                <span style="color:#ff79c6">for</span> <span style="color:#ff79c6">(</span><span style="color:#8be9fd">int</span> i <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">0</span><span style="color:#ff79c6">;</span> i <span style="color:#ff79c6">&lt;</span> <span style="color:#bd93f9">100</span><span style="color:#ff79c6">;</span> i<span style="color:#ff79c6">++)</span> <span style="color:#ff79c6">{</span>
+                    simpleInt<span style="color:#ff79c6">++</span>
+                <span style="color:#ff79c6">}</span>
+            <span style="color:#ff79c6">})</span>
+        <span style="color:#ff79c6">})</span>
+
+        <span style="color:#8be9fd;font-style:italic">expect:</span>
+        simpleInt <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">0</span>
+        threads<span style="color:#ff79c6">.</span><span style="color:#50fa7b">size</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">10</span>
+
+        <span style="color:#8be9fd;font-style:italic">when:</span>
+        threads<span style="color:#ff79c6">.</span><span style="color:#50fa7b">each</span> <span style="color:#ff79c6">{</span> it<span style="color:#ff79c6">.</span><span style="color:#50fa7b">start</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">}</span>
+        threads<span style="color:#ff79c6">.</span><span style="color:#50fa7b">each</span> <span style="color:#ff79c6">{</span> it<span style="color:#ff79c6">.</span><span style="color:#50fa7b">join</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">}</span>
+
+        <span style="color:#8be9fd;font-style:italic">then:</span>
+        simpleInt <span style="color:#ff79c6">==</span> <span style="color:#bd93f9">1000</span>
+    <span style="color:#ff79c6">}</span>
+<span style="color:#ff79c6">}</span></code></pre></div>
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>

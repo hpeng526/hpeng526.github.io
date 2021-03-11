@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-cn">
+  <head>
+    <title>btrace 笔记 // hpeng526</title>
+    <meta charset="utf-8" />
+    <meta name="generator" content="Hugo 0.59.1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="hpeng526" />
+    <meta name="description" content="" />
+    <link rel="stylesheet" href="https://hpeng526.github.io/css/main.min.f90f5edd436ec7b74ad05479a05705770306911f721193e7845948fb07fe1335.css" />
+
+    
+    <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="btrace 笔记"/>
+<meta name="twitter:description" content="Btrace - a safe, dynamic tracing tool for the Java platform Btrace 加载过程 client Javac 加载 Btrace Verifier 编译成字节码 通过 attach 方法动态 attach 到 JVM Attach API submit 提交 Btrace 编译后的字节码到对应 PID VM.(socket 通信) try { Client client = new Client(port, OUTPUT_FILE, PROBE_DESC_PATH, DEBUG, TRACK_RETRANSFORM,"/>
+
+    <meta property="og:title" content="btrace 笔记" />
+<meta property="og:description" content="Btrace - a safe, dynamic tracing tool for the Java platform Btrace 加载过程 client Javac 加载 Btrace Verifier 编译成字节码 通过 attach 方法动态 attach 到 JVM Attach API submit 提交 Btrace 编译后的字节码到对应 PID VM.(socket 通信) try { Client client = new Client(port, OUTPUT_FILE, PROBE_DESC_PATH, DEBUG, TRACK_RETRANSFORM," />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://hpeng526.github.io/posts/18/1804btrace/" />
+<meta property="article:published_time" content="2018-05-09T23:10:00+00:00" />
+<meta property="article:modified_time" content="2018-05-09T23:10:00+00:00" />
+
+
+  </head>
+  <body>
+    <header class="app-header">
+      <a href="https://hpeng526.github.io/"><img class="app-header-avatar" src="/avatar.jpg" alt="hpeng526" /></a>
+      <h1>hpeng526</h1>
+      <p>Notes</p>
+      <div class="app-header-social">
+        
+          <a target="_blank" href="https://github.com/hpeng526" rel="noreferrer noopener"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-github">
+  <title>github</title>
+  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg></a>
+        
+      </div>
+    </header>
+    <main class="app-container">
+      
+  <article class="post">
+    <header class="post-header">
+      <h1 class ="post-title">btrace 笔记</h1>
+      <div class="post-meta">
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-calendar">
+  <title>calendar</title>
+  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+</svg>
+          May 9, 2018
+        </div>
+        <div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-clock">
+  <title>clock</title>
+  <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+          2 min read
+        </div><div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tag">
+  <title>tag</title>
+  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line>
+</svg>
+          <a class="tag" href="https://hpeng526.github.io/tags/btrace/">btrace</a><a class="tag" href="https://hpeng526.github.io/tags/debug/">debug</a></div></div>
+    </header>
+    <div class="post-content">
+      
+
+<p><a href="https://github.com/btraceio/btrace">Btrace</a> - a safe, dynamic tracing tool for the Java platform</p>
+
+<h1 id="btrace-加载过程">Btrace 加载过程</h1>
+
+<h2 id="client">client</h2>
+
+<ul>
+<li>Javac 加载 Btrace Verifier</li>
+<li>编译成字节码</li>
+<li>通过 attach 方法动态 attach 到 JVM <a href="https://docs.oracle.com/javase/7/docs/jdk/api/attach/spec/com/sun/tools/attach/spi/AttachProvider.html">Attach API</a></li>
+
+<li><p>submit 提交 Btrace 编译后的字节码到对应 PID VM.(socket 通信)</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">try</span> {
+Client client <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Client(port, OUTPUT_FILE, PROBE_DESC_PATH,
+    DEBUG, TRACK_RETRANSFORM, TRUSTED, DUMP_CLASSES, DUMP_DIR, statsdDef);
+<span style="color:#ff79c6">if</span> (<span style="color:#ff79c6">!</span> <span style="color:#ff79c6">new</span> File(fileName).<span style="color:#50fa7b">exists</span>()) {
+    errorExit(<span style="color:#f1fa8c">&#34;File not found: &#34;</span> <span style="color:#ff79c6">+</span> fileName, 1);
+}
+byte[] code <span style="color:#ff79c6">=</span> client.<span style="color:#50fa7b">compile</span>(fileName, classPath, includePath);
+<span style="color:#ff79c6">if</span> (code <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span>) {
+    errorExit(<span style="color:#f1fa8c">&#34;BTrace compilation failed&#34;</span>, 1);
+}
+client.<span style="color:#50fa7b">attach</span>(pid, <span style="color:#ff79c6">null</span>, classPath);
+registerExitHook(client);
+<span style="color:#ff79c6">if</span> (con <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+    registerSignalHandler(client);
+}
+<span style="color:#ff79c6">if</span> (isDebug()) debugPrint(<span style="color:#f1fa8c">&#34;submitting the BTrace program&#34;</span>);
+client.<span style="color:#50fa7b">submit</span>(fileName, code, btraceArgs,
+    createCommandListener(client));
+} <span style="color:#ff79c6">catch</span> (IOException exp) {
+errorExit(exp.<span style="color:#50fa7b">getMessage</span>(), 1);
+}</code></pre></div></li>
+</ul>
+
+<!-- more -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">/**
+</span><span style="color:#6272a4"> * Attach the BTrace client to the given Java process.
+</span><span style="color:#6272a4"> * Loads BTrace agent on the target process if not loaded
+</span><span style="color:#6272a4"> * already.
+</span><span style="color:#6272a4"> */</span>
+public void attach(String pid, String sysCp, String bootCp) throws IOException {
+    <span style="color:#ff79c6">try</span> {
+        String agentPath <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/btrace-agent.jar&#34;</span>;
+        String tmp <span style="color:#ff79c6">=</span> Client.<span style="color:#50fa7b">class</span>.<span style="color:#50fa7b">getClassLoader</span>().<span style="color:#50fa7b">getResource</span>(<span style="color:#f1fa8c">&#34;com/sun/btrace&#34;</span>).<span style="color:#50fa7b">toString</span>();
+        tmp <span style="color:#ff79c6">=</span> tmp.<span style="color:#50fa7b">substring</span>(0, tmp.<span style="color:#50fa7b">indexOf</span>(<span style="color:#f1fa8c">&#39;!&#39;</span>));
+        tmp <span style="color:#ff79c6">=</span> tmp.<span style="color:#50fa7b">substring</span>(<span style="color:#f1fa8c">&#34;jar:&#34;</span>.<span style="color:#50fa7b">length</span>(), tmp.<span style="color:#50fa7b">lastIndexOf</span>(<span style="color:#f1fa8c">&#39;/&#39;</span>));
+        agentPath <span style="color:#ff79c6">=</span> tmp <span style="color:#ff79c6">+</span> agentPath;
+        agentPath <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> File(<span style="color:#ff79c6">new</span> URI(agentPath)).<span style="color:#50fa7b">getAbsolutePath</span>();
+        attach(pid, agentPath, sysCp, bootCp);
+    } <span style="color:#ff79c6">catch</span> (RuntimeException re) {
+        <span style="color:#ff79c6">throw</span> re;
+    } <span style="color:#ff79c6">catch</span> (IOException ioexp) {
+        <span style="color:#ff79c6">throw</span> ioexp;
+    } <span style="color:#ff79c6">catch</span> (Exception exp) {
+        <span style="color:#ff79c6">throw</span> <span style="color:#ff79c6">new</span> IOException(exp.<span style="color:#50fa7b">getMessage</span>());
+    }
+}</code></pre></div>
+<h2 id="agent">agent</h2>
+
+<ul>
+<li>添加 classpath</li>
+<li>开启一个 ServerSocket</li>
+<li>收到指令后, 主要有
+
+<ul>
+<li>重写类 遍历当前class, 正则匹配到class</li>
+<li>转换类 替换原来的class</li>
+</ul></li>
+</ul>
+
+<p><code>processClasspaths(libs);</code></p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#6272a4">// ignore String bootClassPath = argMap.get(&#34;bootClassPath&#34;);
+</span><span style="color:#6272a4"></span>nst.<span style="color:#50fa7b">appendToBootstrapClassLoaderSearch</span>(jf);
+<span style="color:#6272a4">// ignore
+</span><span style="color:#6272a4"></span>
+<span style="color:#6272a4">// ignore String systemClassPath = argMap.get(&#34;systemClassPath&#34;);
+</span><span style="color:#6272a4"></span>inst.<span style="color:#50fa7b">appendToSystemClassLoaderSearch</span>(jf);
+<span style="color:#6272a4">// ignore
+</span><span style="color:#6272a4"></span>
+ddPreconfLibs(libs);</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">private static synchronized void main(final String args, final Instrumentation inst) {
+    <span style="color:#ff79c6">if</span> (Main.<span style="color:#50fa7b">inst</span> <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+        <span style="color:#ff79c6">return</span>;
+    } <span style="color:#ff79c6">else</span> {
+        Main.<span style="color:#50fa7b">inst</span> <span style="color:#ff79c6">=</span> inst;
+    }
+
+    <span style="color:#ff79c6">try</span> {
+        loadArgs(args);
+        <span style="color:#6272a4">// set the debug level based on cmdline config
+</span><span style="color:#6272a4"></span>        settings.<span style="color:#50fa7b">setDebug</span>(Boolean.<span style="color:#50fa7b">parseBoolean</span>(argMap.<span style="color:#50fa7b">get</span>(<span style="color:#f1fa8c">&#34;debug&#34;</span>)));
+        <span style="color:#ff79c6">if</span> (isDebug()) {
+            debugPrint(<span style="color:#f1fa8c">&#34;parsed command line arguments&#34;</span>);
+        }
+        parseArgs();
+
+        int startedScripts <span style="color:#ff79c6">=</span> startScripts();
+
+        String tmp <span style="color:#ff79c6">=</span> argMap.<span style="color:#50fa7b">get</span>(<span style="color:#f1fa8c">&#34;noServer&#34;</span>);
+        <span style="color:#6272a4">// noServer is defaulting to true if startup scripts are defined
+</span><span style="color:#6272a4"></span>        boolean noServer <span style="color:#ff79c6">=</span> tmp <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">?</span> Boolean.<span style="color:#50fa7b">parseBoolean</span>(tmp) <span style="color:#ff79c6">:</span> hasScripts();
+        <span style="color:#ff79c6">if</span> (noServer) {
+            <span style="color:#ff79c6">if</span> (isDebug()) {
+                debugPrint(<span style="color:#f1fa8c">&#34;noServer is true, server not started&#34;</span>);
+            }
+            <span style="color:#ff79c6">return</span>;
+        }
+        Thread agentThread <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Thread(<span style="color:#ff79c6">new</span> Runnable() {
+            @Override
+            public void run() {
+                BTraceRuntime.<span style="color:#50fa7b">enter</span>();
+                <span style="color:#ff79c6">try</span> {
+                    startServer();
+                } <span style="color:#ff79c6">finally</span> {
+                    BTraceRuntime.<span style="color:#50fa7b">leave</span>();
+                }
+            }
+        });
+        BTraceRuntime.<span style="color:#50fa7b">initUnsafe</span>();
+        BTraceRuntime.<span style="color:#50fa7b">enter</span>();
+        <span style="color:#ff79c6">try</span> {
+            agentThread.<span style="color:#50fa7b">setDaemon</span>(<span style="color:#ff79c6">true</span>);
+            <span style="color:#ff79c6">if</span> (isDebug()) {
+                debugPrint(<span style="color:#f1fa8c">&#34;starting agent thread&#34;</span>);
+            }
+            agentThread.<span style="color:#50fa7b">start</span>();
+        } <span style="color:#ff79c6">finally</span> {
+            BTraceRuntime.<span style="color:#50fa7b">leave</span>();
+        }
+    } <span style="color:#ff79c6">finally</span> {
+        inst.<span style="color:#50fa7b">addTransformer</span>(transformer, <span style="color:#ff79c6">true</span>);
+        Main.<span style="color:#50fa7b">debugPrint</span>(<span style="color:#f1fa8c">&#34;Agent init took: &#34;</span> <span style="color:#ff79c6">+</span> (System.<span style="color:#50fa7b">nanoTime</span>() <span style="color:#ff79c6">-</span> ts) <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;ns&#34;</span>);
+    }
+}</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">void retransformLoaded() throws UnmodifiableClassException {
+    <span style="color:#ff79c6">if</span> (runtime <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+        <span style="color:#ff79c6">if</span> (probe.<span style="color:#50fa7b">isTransforming</span>() <span style="color:#ff79c6">&amp;&amp;</span> settings.<span style="color:#50fa7b">isRetransformStartup</span>()) {
+            ArrayList&lt;Class&gt; list <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> ArrayList<span style="color:#ff79c6">&lt;&gt;</span>();
+            debugPrint(<span style="color:#f1fa8c">&#34;retransforming loaded classes&#34;</span>);
+            debugPrint(<span style="color:#f1fa8c">&#34;filtering loaded classes&#34;</span>);
+            ClassCache cc <span style="color:#ff79c6">=</span> ClassCache.<span style="color:#50fa7b">getInstance</span>();
+            <span style="color:#ff79c6">for</span> (Class c <span style="color:#ff79c6">:</span> inst.<span style="color:#50fa7b">getAllLoadedClasses</span>()) {
+                <span style="color:#ff79c6">if</span> (c <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span>) {
+                    cc.<span style="color:#50fa7b">get</span>(c);
+                    <span style="color:#ff79c6">if</span> (inst.<span style="color:#50fa7b">isModifiableClass</span>(c) <span style="color:#ff79c6">&amp;&amp;</span>  isCandidate(c)) {
+                        debugPrint(<span style="color:#f1fa8c">&#34;candidate &#34;</span> <span style="color:#ff79c6">+</span> c <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; added&#34;</span>);
+                        list.<span style="color:#50fa7b">add</span>(c);
+                    }
+                }
+            }
+            list.<span style="color:#50fa7b">trimToSize</span>();
+            int size <span style="color:#ff79c6">=</span> list.<span style="color:#50fa7b">size</span>();
+            <span style="color:#ff79c6">if</span> (size <span style="color:#ff79c6">&gt;</span> 0) {
+                Class[] classes <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">new</span> Class[size];
+                list.<span style="color:#50fa7b">toArray</span>(classes);
+                startRetransformClasses(size);
+                <span style="color:#ff79c6">if</span> (isDebug()) {
+                    <span style="color:#ff79c6">for</span>(Class c <span style="color:#ff79c6">:</span> classes) {
+                        <span style="color:#ff79c6">try</span> {
+                            debugPrint(<span style="color:#f1fa8c">&#34;Attempting to retransform class: &#34;</span> <span style="color:#ff79c6">+</span> c.<span style="color:#50fa7b">getName</span>());
+                            inst.<span style="color:#50fa7b">retransformClasses</span>(c);
+                        } <span style="color:#ff79c6">catch</span> (VerifyError e) {
+                            debugPrint(<span style="color:#f1fa8c">&#34;verification error: &#34;</span> <span style="color:#ff79c6">+</span> c.<span style="color:#50fa7b">getName</span>());
+                        }
+                    }
+                } <span style="color:#ff79c6">else</span> {
+                    inst.<span style="color:#50fa7b">retransformClasses</span>(classes);
+                }
+            }
+        }
+        runtime.<span style="color:#50fa7b">send</span>(<span style="color:#ff79c6">new</span> OkayCommand());
+    }
+}</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">@Override
+public synchronized byte[] transform(ClassLoader loader, String className, Class<span style="color:#ff79c6">&lt;?&gt;</span> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
+    <span style="color:#ff79c6">if</span> (probes.<span style="color:#50fa7b">isEmpty</span>()) <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">null</span>;
+
+    className <span style="color:#ff79c6">=</span> className <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">?</span> className <span style="color:#ff79c6">:</span> <span style="color:#f1fa8c">&#34;&lt;anonymous&gt;&#34;</span>;
+
+    <span style="color:#ff79c6">if</span> ((loader <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span> <span style="color:#ff79c6">||</span> loader.<span style="color:#50fa7b">equals</span>(ClassLoader.<span style="color:#50fa7b">getSystemClassLoader</span>())) <span style="color:#ff79c6">&amp;&amp;</span> isSensitiveClass(className)) {
+        <span style="color:#ff79c6">if</span> (isDebug()) {
+            debugPrint(<span style="color:#f1fa8c">&#34;skipping transform for BTrace class &#34;</span> <span style="color:#ff79c6">+</span> className); <span style="color:#6272a4">// NOI18N
+</span><span style="color:#6272a4"></span>        }
+        <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">null</span>;
+    }
+
+    <span style="color:#ff79c6">if</span> (filter.<span style="color:#50fa7b">matchClass</span>(className) <span style="color:#ff79c6">==</span> Filter.<span style="color:#50fa7b">Result</span>.<span style="color:#50fa7b">FALSE</span>) <span style="color:#ff79c6">return</span> <span style="color:#ff79c6">null</span>;
+
+    boolean entered <span style="color:#ff79c6">=</span> BTraceRuntime.<span style="color:#50fa7b">enter</span>();
+    <span style="color:#ff79c6">try</span> {
+        <span style="color:#ff79c6">if</span> (isDebug()) {
+            debug.<span style="color:#50fa7b">dumpClass</span>(className.<span style="color:#50fa7b">replace</span>(<span style="color:#f1fa8c">&#39;.&#39;</span>, <span style="color:#f1fa8c">&#39;/&#39;</span>) <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;_orig&#34;</span>, classfileBuffer);
+        }
+        BTraceClassReader cr <span style="color:#ff79c6">=</span> InstrumentUtils.<span style="color:#50fa7b">newClassReader</span>(loader, classfileBuffer);
+        BTraceClassWriter cw <span style="color:#ff79c6">=</span> InstrumentUtils.<span style="color:#50fa7b">newClassWriter</span>(cr);
+        <span style="color:#ff79c6">for</span>(BTraceProbe p <span style="color:#ff79c6">:</span> probes) {
+            p.<span style="color:#50fa7b">notifyTransform</span>(className);
+            cw.<span style="color:#50fa7b">addInstrumentor</span>(p, loader);
+        }
+        byte[] transformed <span style="color:#ff79c6">=</span> cw.<span style="color:#50fa7b">instrument</span>();
+        <span style="color:#ff79c6">if</span> (transformed <span style="color:#ff79c6">==</span> <span style="color:#ff79c6">null</span>) {
+            <span style="color:#6272a4">// no instrumentation necessary
+</span><span style="color:#6272a4"></span>            <span style="color:#ff79c6">if</span> (isDebug()) {
+                debugPrint(<span style="color:#f1fa8c">&#34;skipping class &#34;</span> <span style="color:#ff79c6">+</span> cr.<span style="color:#50fa7b">getJavaClassName</span>());
+            }
+            <span style="color:#ff79c6">return</span> classfileBuffer;
+        } <span style="color:#ff79c6">else</span> {
+            <span style="color:#ff79c6">if</span> (isDebug()) {
+                debugPrint(<span style="color:#f1fa8c">&#34;transformed class &#34;</span> <span style="color:#ff79c6">+</span> cr.<span style="color:#50fa7b">getJavaClassName</span>());
+            }
+            <span style="color:#ff79c6">if</span> (debug.<span style="color:#50fa7b">isDumpClasses</span>()) {
+                debug.<span style="color:#50fa7b">dumpClass</span>(className.<span style="color:#50fa7b">replace</span>(<span style="color:#f1fa8c">&#39;.&#39;</span>, <span style="color:#f1fa8c">&#39;/&#39;</span>), transformed);
+            }
+        }
+        <span style="color:#ff79c6">return</span> transformed;
+    } <span style="color:#ff79c6">catch</span> (Throwable th) {
+        debugPrint(th);
+        <span style="color:#ff79c6">throw</span> th;
+    } <span style="color:#ff79c6">finally</span> {
+        <span style="color:#ff79c6">if</span> (entered) {
+            BTraceRuntime.<span style="color:#50fa7b">leave</span>();
+        }
+    }
+}</code></pre></div>
+<h1 id="brtace-使用">Brtace 使用</h1>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">btrace <span style="color:#ff79c6">{</span>pid<span style="color:#ff79c6">}</span> Debug.java</code></pre></div>
+<h2 id="方法内方法调用">方法内方法调用</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">@OnMethod(clazz <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*className.*/&#34;</span>, method <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*methodName.*/&#34;</span>,
+        location <span style="color:#ff79c6">=</span> @Location(value <span style="color:#ff79c6">=</span> Kind.<span style="color:#50fa7b">CALL</span>, clazz <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*/&#34;</span>, method <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*/&#34;</span>, where <span style="color:#ff79c6">=</span> Where.<span style="color:#50fa7b">AFTER</span>))
+    public static void methodCall(@ProbeClassName String probeClassName,
+                                   @ProbeMethodName String probeMethod,
+                                   @TargetInstance Object tInstance,
+                                   @TargetMethodOrField String tMethod,
+                                   @Duration long time) {
+        <span style="color:#ff79c6">if</span> (time <span style="color:#ff79c6">/</span> 100000 <span style="color:#ff79c6">&gt;</span> 0) {
+            BTraceUtils.<span style="color:#50fa7b">println</span>(probeClassName <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;#&#34;</span> <span style="color:#ff79c6">+</span> probeMethod <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; \n\t &#34;</span> <span style="color:#ff79c6">+</span> tInstance <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;#&#34;</span> <span style="color:#ff79c6">+</span> tMethod);
+            BTraceUtils.<span style="color:#50fa7b">println</span>(<span style="color:#f1fa8c">&#34;cost: &#34;</span> <span style="color:#ff79c6">+</span> time <span style="color:#ff79c6">/</span> 100000);
+        }
+    }</code></pre></div>
+<h2 id="方法调用盏">方法调用盏</h2>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java">@OnMethod(clazz <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*className.*/&#34;</span>, method <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*methodName.*/&#34;</span>,
+        location <span style="color:#ff79c6">=</span> @Location(value <span style="color:#ff79c6">=</span> Kind.<span style="color:#50fa7b">CALL</span>, clazz <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*/&#34;</span>, method <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#34;/.*/&#34;</span>, where <span style="color:#ff79c6">=</span> Where.<span style="color:#50fa7b">AFTER</span>))
+    public static void callStack(@ProbeClassName String probeClassName,
+                                 @ProbeMethodName String probeMethod) {
+        BTraceUtils.<span style="color:#50fa7b">println</span>(<span style="color:#f1fa8c">&#34;----------------&#34;</span> <span style="color:#ff79c6">+</span> probeClassName <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34;#&#34;</span> <span style="color:#ff79c6">+</span> probeMethod);
+        BTraceUtils.<span style="color:#50fa7b">jstack</span>();
+    }</code></pre></div>
+    </div>
+    <div class="post-footer">
+      
+    </div>
+  </article>
+
+    </main>
+  </body>
+</html>
