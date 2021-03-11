@@ -1,5 +1,5 @@
 ---
-title: async-profiler
+title: golang 泛型
 date: 2021-03-10 23:33:00
 tags: [golang, generic]
 ---
