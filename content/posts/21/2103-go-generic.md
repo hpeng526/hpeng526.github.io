@@ -28,8 +28,8 @@ func gMax[T interface {type int, float64}](a T, b T) T {
 
 func main() {
     fmt.Printf("%T=%[1]v\n", gMax(1, 2))
-    fmt.Printf("%T=%[1]v\n",gMax(1.0, 2.2))
-    fmt.Printf("%T=%[1]v\n",gMax[int](3.0, 4.0))
+    fmt.Printf("%T=%[1]v\n", gMax(1.0, 2.2))
+    fmt.Printf("%T=%[1]v\n", gMax[int](3.0, 4.0))
 }
 ```
 
@@ -47,7 +47,7 @@ float64=2.2
 int=4
 ```
 
-`-G=3` 可以从 `go tool compile -help` , -G 是 accept generic code
+`-G=3` 可以从 `go tool compile -help` , `-G` 是 `accept generic code`
 
 这样就能体验go的泛型了
 
